@@ -45,8 +45,8 @@ export function AddTransactionDialog() {
     })
 
     if (error) {
-      alert("שגיאה בשמירת הנתונים")
       console.error(error)
+      alert(`Error: ${error.message}`)
     } else {
       setOpen(false)
       setAmount("")
