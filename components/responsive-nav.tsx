@@ -2,6 +2,7 @@
 
 import { BottomNav } from "@/components/bottom-nav"
 import { Sidebar } from "@/components/sidebar"
+import { usePathname } from "next/navigation"
 
 export function ResponsiveNav({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
