@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next'
+﻿import type { Metadata, Viewport } from 'next'
 import { Heebo } from 'next/font/google'
 import './globals.css'
 
@@ -7,6 +7,13 @@ const heebo = Heebo({ subsets: ['hebrew', 'latin'] })
 export const metadata: Metadata = {
   title: 'ניהול חיים - פיננסים',
   description: 'מערכת ניהול פיננסים אישי',
+}
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  initialScale: 1,
+  maximumScale: 1,
+  width: 'device-width',
 }
 
 export default function RootLayout({
