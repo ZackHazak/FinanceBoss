@@ -1,6 +1,7 @@
 ﻿import type { Metadata, Viewport } from 'next'
 import { Heebo } from 'next/font/google'
 import './globals.css'
+import { ResponsiveNav } from "@/components/responsive-nav"
 
 const heebo = Heebo({ subsets: ['hebrew', 'latin'] })
 
@@ -23,7 +24,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl">
-      <body className={heebo.className}>{children}</body>
+      <body className={heebo.className}>
+        <ResponsiveNav>
+          {children}
+        </ResponsiveNav>
+      </body>
     </html>
   )
 }

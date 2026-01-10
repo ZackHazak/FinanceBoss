@@ -1,4 +1,3 @@
-import { BottomNav } from "@/components/bottom-nav"
 import { Dashboard } from "@/components/dashboard"
 import { supabase } from "@/lib/supabase"
 
@@ -27,7 +26,7 @@ export default async function Home() {
 
             <Dashboard initialTransactions={txs} />
 
-            <BottomNav />
+
         </main>
     )
 }
