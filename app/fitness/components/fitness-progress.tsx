@@ -74,7 +74,8 @@ export function FitnessProgress() {
 
             if (program && log.exercises_data) {
                 log.exercises_data.forEach(loggedEx => {
-                    if (loggedEx.completed) {
+                    // Calculate volume for all exercises with weight (regardless of completed status)
+                    if (loggedEx.weight > 0) {
                         // Find matching exercise def (Case insensitive & trimmed)
                         const def = program.exercises.find(e =>
                             e.name.trim().toLowerCase() === loggedEx.exercise.trim().toLowerCase()
@@ -85,12 +86,7 @@ export function FitnessProgress() {
                             const weight = loggedEx.weight || 0
                             const exerciseVolume = (def.sets * reps * weight)
                             total_volume += exerciseVolume
-                            console.log(`Matched: ${loggedEx.exercise}, Vol: ${exerciseVolume}`)
-                        } else {
-                            console.log("No definition found for:", loggedEx.exercise)
                         }
-                    } else {
-                        console.log("Skipping uncompleted exercise:", loggedEx.exercise)
                     }
                 })
             }
