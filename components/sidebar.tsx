@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, PlusCircle, List, PieChart } from "lucide-react"
+import { Home, PlusCircle, List, PieChart, Dumbbell } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar() {
@@ -11,8 +11,7 @@ export function Sidebar() {
     const navItems = [
         { href: "/", label: "בית", icon: Home },
         { href: "/transactions", label: "תנועות", icon: List },
-        { href: "/add", label: "הוספה", icon: PlusCircle },
-        { href: "/stats", label: "דוחות", icon: PieChart },
+        { href: "/fitness", label: "אימונים", icon: Dumbbell },
     ]
 
     return (
