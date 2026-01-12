@@ -7,17 +7,17 @@ import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp } from
 import Link from "next/link"
 
 // PPL Program Data
-const WORKOUT_CYCLE = ["PULL", "PUSH", "LEGS"] as const
-type WorkoutType = typeof WORKOUT_CYCLE[number]
+export const WORKOUT_CYCLE = ["PULL", "PUSH", "LEGS"] as const
+export type WorkoutType = typeof WORKOUT_CYCLE[number]
 
-interface Exercise {
+export interface Exercise {
     name: string
     sets: number
     reps: number | string
     rpe: number
 }
 
-interface Program {
+export interface Program {
     name: string
     gradient: string
     bgGlow: string
@@ -25,7 +25,8 @@ interface Program {
     exercises: Exercise[]
 }
 
-const WORKOUT_PROGRAMS: Record<WorkoutType, Program> = {
+
+export const WORKOUT_PROGRAMS: Record<WorkoutType, Program> = {
     PULL: {
         name: "PULL",
         gradient: "from-blue-500 via-blue-600 to-indigo-600",
@@ -300,8 +301,8 @@ export default function BodyPage() {
                                             <tr
                                                 key={index}
                                                 className={`border-b border-slate-100 transition-all duration-200 ${exerciseInputs[index]?.completed
-                                                        ? 'bg-green-50/50'
-                                                        : 'hover:bg-slate-50'
+                                                    ? 'bg-green-50/50'
+                                                    : 'hover:bg-slate-50'
                                                     }`}
                                             >
                                                 <td className="text-right px-8 py-5">
@@ -341,8 +342,8 @@ export default function BodyPage() {
                                                     >
                                                         <CheckCircle2
                                                             className={`h-8 w-8 transition-all duration-200 ${exerciseInputs[index]?.completed
-                                                                    ? "text-green-600 fill-green-600 drop-shadow-lg"
-                                                                    : "text-slate-300 group-hover:text-slate-400"
+                                                                ? "text-green-600 fill-green-600 drop-shadow-lg"
+                                                                : "text-slate-300 group-hover:text-slate-400"
                                                                 }`}
                                                         />
                                                     </button>
@@ -458,8 +459,8 @@ export default function BodyPage() {
                                                     <div
                                                         key={i}
                                                         className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${ex.completed
-                                                                ? 'bg-green-50/50 border-green-200/50'
-                                                                : 'bg-slate-50/50 border-slate-200/50'
+                                                            ? 'bg-green-50/50 border-green-200/50'
+                                                            : 'bg-slate-50/50 border-slate-200/50'
                                                             }`}
                                                     >
                                                         <CheckCircle2

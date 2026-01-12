@@ -11,6 +11,13 @@ export default function HubPage() {
             description: "אימונים וכושר"
         },
         {
+            title: "Fitness Tracker",
+            href: "/fitness",
+            icon: Dumbbell,
+            color: "bg-green-500",
+            description: "מעקב התקדמות ויומן"
+        },
+        {
             title: "Finance",
             href: "/finance",
             icon: Wallet,
