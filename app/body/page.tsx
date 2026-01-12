@@ -7,7 +7,25 @@ import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp } from
 import Link from "next/link"
 
 // PPL Program Data
-const WORKOUT_PROGRAMS = {
+const WORKOUT_CYCLE = ["PULL", "PUSH", "LEGS"] as const
+type WorkoutType = typeof WORKOUT_CYCLE[number]
+
+interface Exercise {
+    name: string
+    sets: number
+    reps: number | string
+    rpe: number
+}
+
+interface Program {
+    name: string
+    gradient: string
+    bgGlow: string
+    borderGlow: string
+    exercises: Exercise[]
+}
+
+const WORKOUT_PROGRAMS: Record<WorkoutType, Program> = {
     PULL: {
         name: "PULL",
         gradient: "from-blue-500 via-blue-600 to-indigo-600",
@@ -50,8 +68,8 @@ const WORKOUT_PROGRAMS = {
     }
 }
 
-const WORKOUT_CYCLE = ["PULL", "PUSH", "LEGS"] as const
-type WorkoutType = typeof WORKOUT_CYCLE[number]
+
+
 
 interface WorkoutLog {
     id: string
@@ -281,11 +299,10 @@ export default function BodyPage() {
                                         {program.exercises.map((exercise, index) => (
                                             <tr
                                                 key={index}
-                                                className={`border-b border-slate-100 transition-all duration-200 ${
-                                                    exerciseInputs[index]?.completed
+                                                className={`border-b border-slate-100 transition-all duration-200 ${exerciseInputs[index]?.completed
                                                         ? 'bg-green-50/50'
                                                         : 'hover:bg-slate-50'
-                                                }`}
+                                                    }`}
                                             >
                                                 <td className="text-right px-8 py-5">
                                                     <span className={`font-semibold text-base ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
@@ -323,11 +340,10 @@ export default function BodyPage() {
                                                         className="group hover:scale-110 transition-transform duration-200"
                                                     >
                                                         <CheckCircle2
-                                                            className={`h-8 w-8 transition-all duration-200 ${
-                                                                exerciseInputs[index]?.completed
+                                                            className={`h-8 w-8 transition-all duration-200 ${exerciseInputs[index]?.completed
                                                                     ? "text-green-600 fill-green-600 drop-shadow-lg"
                                                                     : "text-slate-300 group-hover:text-slate-400"
-                                                            }`}
+                                                                }`}
                                                         />
                                                     </button>
                                                 </td>
@@ -441,26 +457,22 @@ export default function BodyPage() {
                                                 {log.exercises_data.map((ex, i) => (
                                                     <div
                                                         key={i}
-                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
-                                                            ex.completed
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${ex.completed
                                                                 ? 'bg-green-50/50 border-green-200/50'
                                                                 : 'bg-slate-50/50 border-slate-200/50'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <CheckCircle2
-                                                            className={`h-4 w-4 flex-shrink-0 ${
-                                                                ex.completed ? "text-green-600 fill-green-600" : "text-slate-300"
-                                                            }`}
+                                                            className={`h-4 w-4 flex-shrink-0 ${ex.completed ? "text-green-600 fill-green-600" : "text-slate-300"
+                                                                }`}
                                                         />
                                                         <div className="flex-1 min-w-0">
-                                                            <div className={`text-xs font-semibold truncate ${
-                                                                ex.completed ? "text-green-900" : "text-slate-600"
-                                                            }`}>
+                                                            <div className={`text-xs font-semibold truncate ${ex.completed ? "text-green-900" : "text-slate-600"
+                                                                }`}>
                                                                 {ex.exercise}
                                                             </div>
-                                                            <div className={`text-xs font-bold ${
-                                                                ex.completed ? "text-green-700" : "text-slate-400"
-                                                            }`}>
+                                                            <div className={`text-xs font-bold ${ex.completed ? "text-green-700" : "text-slate-400"
+                                                                }`}>
                                                                 {ex.weight} ק״ג
                                                             </div>
                                                         </div>
