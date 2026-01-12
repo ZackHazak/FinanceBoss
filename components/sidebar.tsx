@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, PlusCircle, List, PieChart, Dumbbell } from "lucide-react"
+import { Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar() {
@@ -10,15 +10,13 @@ export function Sidebar() {
 
     const navItems = [
         { href: "/", label: "בית", icon: Home },
-        { href: "/transactions", label: "תנועות", icon: List },
-        { href: "/fitness", label: "אימונים", icon: Dumbbell },
     ]
 
     return (
         <div className="hidden h-screen w-64 flex-col border-l bg-card text-card-foreground shadow-sm md:flex">
             <div className="p-6">
                 <h1 className="text-2xl font-bold tracking-tight text-primary">Life OS</h1>
-                <p className="text-xs text-muted-foreground">ניהול פיננסים חכם</p>
+                <p className="text-xs text-muted-foreground">ניהול פיננסים וכושר</p>
             </div>
             <nav className="flex-1 space-y-2 px-4">
                 {navItems.map(({ href, label, icon: Icon }) => {
@@ -39,7 +37,7 @@ export function Sidebar() {
                 })}
             </nav>
             <div className="p-4 text-center text-xs text-muted-foreground opacity-50">
-                &copy; {new Date().getFullYear()} Finance Boss
+                &copy; {new Date().getFullYear()} Life OS
             </div>
         </div>
     )
