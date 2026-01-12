@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui-components"
 import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck } from "lucide-react"
-import { WORKOUT_PROGRAMS, WorkoutType } from "@/app/body/page"
+import { WORKOUT_PROGRAMS, type WorkoutType } from "@/app/body/workout-data"
 
 interface RawWorkoutLog {
     id: string
