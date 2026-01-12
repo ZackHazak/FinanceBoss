@@ -227,7 +227,7 @@ export default function BodyPage() {
                                             האימון הבא שלך מחכה
                                         </p>
                                         <p className="text-xs text-slate-400 mt-1">
-                                            {program.exercises.length} תרגילים • {program.exercises.reduce((acc, ex) => acc + ex.sets, 0)} סטים
+                                            {program.exercises.length} תרגילים • {String(program.exercises.reduce((acc, ex) => acc + ex.sets, 0))} סטים
                                         </p>
                                     </div>
                                 </div>
