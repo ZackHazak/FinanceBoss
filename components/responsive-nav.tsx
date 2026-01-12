@@ -4,13 +4,6 @@ import { BottomNav } from "@/components/bottom-nav"
 import { Sidebar } from "@/components/sidebar"
 
 export function ResponsiveNav({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname()
-    const isHub = pathname === "/"
-
-    if (isHub) {
-        return <>{children}</>
-    }
-
     return (
         <div className="flex min-h-screen flex-row">
             {/* Desktop Sidebar */}
