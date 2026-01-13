@@ -1,15 +1,8 @@
 import Link from "next/link"
-import { Wallet, Dumbbell, BookOpen, CheckSquare } from "lucide-react"
+import { Wallet, Dumbbell } from "lucide-react"
 
 export default function HubPage() {
     const modules = [
-        {
-            title: "Finance",
-            href: "/finance",
-            icon: Wallet,
-            color: "bg-blue-500",
-            description: "מעקב הוצאות והכנסות"
-        },
         {
             title: "Body",
             href: "/body",
@@ -18,18 +11,18 @@ export default function HubPage() {
             description: "אימונים וכושר"
         },
         {
-            title: "Prime",
-            href: "/prime",
-            icon: BookOpen,
-            color: "bg-purple-500",
-            description: "יומן ומחשבות"
+            title: "Fitness Tracker",
+            href: "/fitness",
+            icon: Dumbbell,
+            color: "bg-green-500",
+            description: "מעקב התקדמות ויומן"
         },
         {
-            title: "Tasks",
-            href: "/tasks",
-            icon: CheckSquare,
-            color: "bg-green-500",
-            description: "משימות לביצוע"
+            title: "Finance",
+            href: "/finance",
+            icon: Wallet,
+            color: "bg-blue-500",
+            description: "מעקב הוצאות והכנסות"
         }
     ]
 
