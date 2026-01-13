@@ -102,13 +102,16 @@ export function FitnessProgress() {
             }
         })
 
-        // Calculate improvement
+        // Calculate improvement compared to previous session of SAME workout type
         processed.forEach((session, idx) => {
-            if (idx > 0) {
-                const prev = processed[idx - 1]
-                if (prev.total_volume > 0) {
-                    session.improvement = ((session.total_volume - prev.total_volume) / prev.total_volume) * 100
-                }
+            // Find the most recent previous session with the same workout type
+            const prevSameType = processed
+                .slice(0, idx)
+                .reverse()
+                .find(s => s.day_name === session.day_name)
+
+            if (prevSameType && prevSameType.total_volume > 0) {
+                session.improvement = ((session.total_volume - prevSameType.total_volume) / prevSameType.total_volume) * 100
             }
         })
 
