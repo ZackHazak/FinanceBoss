@@ -1,4 +1,5 @@
 import { Dashboard } from "@/components/dashboard"
+import { FinanceBudgetSection } from "./components/finance-budget-section"
 import { supabase } from "@/lib/supabase"
 
 export const revalidate = 0 // Disable caching for real-time feel
@@ -17,16 +18,17 @@ export default async function Home() {
     const txs = transactions || []
 
     return (
-        <main className="min-h-screen bg-background pb-20">
+        <main className="min-h-screen pb-20">
             {/* Header */}
-            <header className="sticky top-0 z-10 border-b bg-background/80 px-6 py-4 backdrop-blur-md">
-                <h1 className="text-xl font-bold tracking-tight">בוקר טוב 👋</h1>
-                <p className="text-sm text-muted-foreground">הנה מה שקורה בחשבון שלך</p>
+            <header className="sticky top-0 z-10 glass-header px-6 py-4">
+                <h1 className="text-xl font-bold tracking-tight text-slate-800">בוקר טוב 👋</h1>
+                <p className="text-sm text-slate-500">הנה מה שקורה בחשבון שלך</p>
             </header>
 
             <Dashboard initialTransactions={txs} />
 
-
+            {/* Budget Section */}
+            <FinanceBudgetSection />
         </main>
     )
 }

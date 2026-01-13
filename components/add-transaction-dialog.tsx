@@ -14,14 +14,20 @@ import {
 } from "@/components/ui-dialog"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/types/finance"
 
 export function AddTransactionDialog() {
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
   const [type, setType] = useState<"income" | "expense">("expense")
+  const [category, setCategory] = useState("other")
+  const [customCategory, setCustomCategory] = useState("")
+  const [showCustomInput, setShowCustomInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,11 +43,16 @@ export function AddTransactionDialog() {
     // Adjust amount based on type (negative for expense)
     const finalAmount = type === 'expense' ? -Math.abs(amountValue) : Math.abs(amountValue)
 
+    // Use custom category if selected, otherwise use dropdown value
+    const finalCategory = showCustomInput && customCategory.trim()
+      ? customCategory.trim()
+      : category
+
     const { error } = await supabase.from("transactions").insert({
       amount: finalAmount,
       description,
       type,
-      category: "כללי", // Default category
+      category: finalCategory,
     })
 
     if (error) {
@@ -51,6 +62,9 @@ export function AddTransactionDialog() {
       setOpen(false)
       setAmount("")
       setDescription("")
+      setCategory("other")
+      setCustomCategory("")
+      setShowCustomInput(false)
       router.refresh() // Refresh server components
     }
     setLoading(false)
@@ -116,6 +130,41 @@ export function AddTransactionDialog() {
               placeholder="לדוגמה: קניות בסופר"
               required
             />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="category" className="text-sm font-medium">
+              קטגוריה
+            </label>
+            <select
+              id="category"
+              value={showCustomInput ? "_custom" : category}
+              onChange={(e) => {
+                if (e.target.value === "_custom") {
+                  setShowCustomInput(true)
+                } else {
+                  setShowCustomInput(false)
+                  setCategory(e.target.value)
+                }
+              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              {categories.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+              <option value="_custom">✏️ מותאם אישית...</option>
+            </select>
+            {showCustomInput && (
+              <Input
+                id="customCategory"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="הזן שם קטגוריה"
+                autoFocus
+                required
+              />
+            )}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading}>

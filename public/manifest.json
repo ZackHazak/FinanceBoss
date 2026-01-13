@@ -1,24 +1,62 @@
 {
-    "name": "Life OS Finance",
-    "short_name": "Finance",
-    "description": "ניהול פיננסים אישי וחכם",
+    "name": "Life OS",
+    "short_name": "Life OS",
+    "description": "מערכת ניהול חיים אישית - פיננסים, כושר ותזונה",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "display_override": ["standalone", "minimal-ui"],
     "background_color": "#ffffff",
     "theme_color": "#000000",
     "dir": "rtl",
     "lang": "he",
-    "orientation": "portrait",
+    "orientation": "portrait-primary",
+    "id": "life-os-pwa",
+    "categories": ["finance", "health", "fitness", "lifestyle"],
     "icons": [
         {
             "src": "/icons/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/icons/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "כושר",
+            "short_name": "Body",
+            "url": "/body",
+            "icons": [{"src": "/icons/icon-192x192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "תזונה",
+            "short_name": "Nutrition",
+            "url": "/nutrition",
+            "icons": [{"src": "/icons/icon-192x192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "פיננסים",
+            "short_name": "Finance",
+            "url": "/finance",
+            "icons": [{"src": "/icons/icon-192x192.png", "sizes": "192x192"}]
         }
     ]
 }
