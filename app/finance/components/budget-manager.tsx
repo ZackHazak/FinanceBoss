@@ -230,9 +230,13 @@ export function BudgetManager({ onBudgetChange }: BudgetManagerProps) {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-modal w-full max-w-sm rounded-3xl">
-                        <div className="flex items-center justify-between p-5 border-b border-white/20">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center">
+                    <div className="glass-modal w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl sm:m-4 max-h-[85vh] overflow-y-auto">
+                        {/* Mobile drag handle */}
+                        <div className="sm:hidden flex justify-center pt-3 pb-1">
+                            <div className="w-10 h-1 bg-slate-300 rounded-full" />
+                        </div>
+                        <div className="flex items-center justify-between p-5 pt-2 sm:pt-5 border-b border-white/20">
                             <h3 className="font-bold text-slate-800 text-lg">
                                 {editingBudget ? 'ערוך תקציב' : 'הוסף תקציב'}
                             </h3>
@@ -299,7 +303,7 @@ export function BudgetManager({ onBudgetChange }: BudgetManagerProps) {
                             </div>
                         </div>
 
-                        <div className="p-5 border-t border-white/20 flex gap-3">
+                        <div className="p-5 pb-8 sm:pb-5 border-t border-white/20 flex gap-3" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
                             <button
                                 onClick={closeModal}
                                 className="flex-1 py-3 glass-button text-slate-600 font-medium rounded-xl hover:bg-white/50 transition-all"
