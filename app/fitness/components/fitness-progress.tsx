@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui-components"
@@ -270,16 +270,16 @@ export function FitnessProgress() {
     const tableSessions = [...sessions].reverse()
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Status Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Status Cards - Stack on mobile, 3 cols on desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 <Card className="bg-white shadow border-slate-200">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Current Phase</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
+                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">Current Phase</CardTitle>
                         <CalendarCheck className="h-4 w-4 text-slate-500" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">Training Week {currentWeek}</div>
+                    <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+                        <div className="text-xl md:text-2xl font-bold text-slate-900">Week {currentWeek}</div>
                         <p className="text-xs text-slate-500 mt-1">
                             {isDeloadWeek ? (
                                 <span className="text-amber-600 font-bold flex items-center gap-1">
@@ -293,51 +293,51 @@ export function FitnessProgress() {
                 </Card>
 
                 <Card className="bg-white shadow border-slate-200">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Last Volume</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
+                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">Last Volume</CardTitle>
                         <Dumbbell className="h-4 w-4 text-slate-500" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+                        <div className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
                             {currentSession.total_volume.toLocaleString()} kg
-                            {currentSession.isPR && <Trophy className="h-5 w-5 text-amber-500" />}
+                            {currentSession.isPR && <Trophy className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />}
                         </div>
                         <p className={`text-xs mt-1 flex items-center gap-1 ${currentSession.improvement && currentSession.improvement > 0 ? 'text-green-600' : 'text-slate-500'
                             }`}>
                             {currentSession.improvement ? (
                                 <>
                                     <TrendingUp className={`h-3 w-3 ${currentSession.improvement < 0 ? 'rotate-180 text-red-500' : ''}`} />
-                                    {Math.abs(currentSession.improvement).toFixed(1)}% {currentSession.improvement > 0 ? 'increase' : 'decrease'}
+                                    {Math.abs(currentSession.improvement).toFixed(1)}%
                                 </>
                             ) : "First workout"}
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className={`${isDeloadWeek ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} shadow`}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className={`text-sm font-medium ${isDeloadWeek ? 'text-amber-700' : 'text-blue-700'}`}>
+                <Card className={`${isDeloadWeek ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} shadow sm:col-span-2 md:col-span-1`}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
+                        <CardTitle className={`text-xs md:text-sm font-medium ${isDeloadWeek ? 'text-amber-700' : 'text-blue-700'}`}>
                             {isDeloadWeek ? "Deload Advice" : "Training Focus"}
                         </CardTitle>
                         <AlertCircle className={`h-4 w-4 ${isDeloadWeek ? 'text-amber-600' : 'text-blue-600'}`} />
                     </CardHeader>
-                    <CardContent>
-                        <div className={`text-sm font-semibold ${isDeloadWeek ? 'text-amber-900' : 'text-blue-900'}`}>
+                    <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+                        <div className={`text-xs md:text-sm font-semibold ${isDeloadWeek ? 'text-amber-900' : 'text-blue-900'}`}>
                             {isDeloadWeek
-                                ? "Reduce intensity by 50%. Focus on technique and mobility."
-                                : "Aim for progressive overload (increase weight or reps)."}
+                                ? "Reduce intensity by 50%"
+                                : "Progressive overload"}
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Volume Chart */}
-            <Card className="bg-white shadow border-slate-200 p-6">
-                <div className="mb-6">
-                    <h3 className="text-lg font-bold text-slate-900">Volume Progression</h3>
-                    <p className="text-sm text-slate-500">Total volume lifted per workout session (Body Module)</p>
+            {/* Volume Chart - Smaller on mobile */}
+            <Card className="bg-white shadow border-slate-200 p-4 md:p-6">
+                <div className="mb-4 md:mb-6">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900">Volume Progression</h3>
+                    <p className="text-xs md:text-sm text-slate-500">Total volume per workout</p>
                 </div>
-                <div className="h-[300px] w-full">
+                <div className="h-[200px] md:h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={sessions}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -345,19 +345,20 @@ export function FitnessProgress() {
                                 dataKey="date"
                                 tickFormatter={(date) => new Date(date).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}
                                 stroke="#64748b"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
                             />
                             <YAxis
                                 stroke="#64748b"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                                width={35}
                             />
                             <Tooltip
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                                 formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
                                 labelFormatter={(label) => new Date(label).toLocaleDateString('he-IL', { dateStyle: 'medium' })}
                             />
@@ -365,152 +366,272 @@ export function FitnessProgress() {
                                 type="monotone"
                                 dataKey="total_volume"
                                 stroke="#2563eb"
-                                strokeWidth={3}
-                                dot={{ fill: '#2563eb', strokeWidth: 2, r: 4, stroke: '#fff' }}
-                                activeDot={{ r: 6, strokeWidth: 0 }}
+                                strokeWidth={2}
+                                dot={{ fill: '#2563eb', strokeWidth: 1, r: 3, stroke: '#fff' }}
+                                activeDot={{ r: 5, strokeWidth: 0 }}
                             />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
             </Card>
 
-            {/* Progress Table with Expandable Rows */}
-            <div className="rounded-lg border bg-white shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-700 font-semibold border-b">
-                            <tr>
-                                <th className="px-4 py-3 w-8"></th>
-                                <th className="px-4 py-3">Date</th>
-                                <th className="px-4 py-3">Workout</th>
-                                <th className="px-4 py-3 text-center">Week #</th>
-                                <th className="px-4 py-3 text-right">Volume</th>
-                                <th className="px-4 py-3 text-right">Improvement</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {tableSessions.map((session) => {
-                                const prevWorkout = findPreviousWorkout(session, tableSessions)
-                                const isExpanded = expandedSession === session.id
+            {/* Mobile: Card-based layout, Desktop: Table */}
+            <div className="space-y-3">
+                <h3 className="text-base md:text-lg font-bold text-slate-900 px-1">Workout History</h3>
 
-                                return (
-                                    <>
-                                        <tr
-                                            key={session.id}
-                                            className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${session.isDeload ? 'bg-amber-50/30' : ''}`}
-                                            onClick={() => toggleExpand(session.id)}
-                                        >
-                                            <td className="px-4 py-3">
-                                                {isExpanded ? (
-                                                    <ChevronUp className="h-4 w-4 text-slate-400" />
-                                                ) : (
-                                                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 font-medium text-slate-900">
-                                                {new Date(session.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-600 flex items-center gap-2">
-                                                {session.day_name}
-                                                {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${session.isDeload ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                                                    }`}>
-                                                    W{session.weekNumber}
+                {/* Mobile Cards */}
+                <div className="md:hidden space-y-3">
+                    {tableSessions.map((session) => {
+                        const prevWorkout = findPreviousWorkout(session, tableSessions)
+                        const isExpanded = expandedSession === session.id
+
+                        return (
+                            <div
+                                key={session.id}
+                                className={`rounded-xl border bg-white shadow-sm overflow-hidden ${session.isDeload ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'}`}
+                            >
+                                {/* Card Header - Clickable */}
+                                <div
+                                    className="p-4 cursor-pointer active:bg-slate-50"
+                                    onClick={() => toggleExpand(session.id)}
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-slate-900">{session.day_name}</span>
+                                            {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${session.isDeload ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                W{session.weekNumber}
+                                            </span>
+                                        </div>
+                                        {isExpanded ? (
+                                            <ChevronUp className="h-5 w-5 text-slate-400" />
+                                        ) : (
+                                            <ChevronDown className="h-5 w-5 text-slate-400" />
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-slate-500">
+                                            {new Date(session.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono font-semibold text-slate-700">
+                                                {session.total_volume.toLocaleString()} kg
+                                            </span>
+                                            {session.improvement && (
+                                                <span className={`text-sm font-bold ${session.improvement > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                    {session.improvement > 0 ? '+' : ''}{session.improvement.toFixed(1)}%
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono font-medium text-slate-700">
-                                                {session.total_volume.toLocaleString()}
-                                            </td>
-                                            <td className={`px-4 py-3 text-right font-bold ${!session.improvement ? 'text-slate-400' :
-                                                session.improvement > 0 ? 'text-green-600' : 'text-red-500'
-                                                }`}>
-                                                {session.improvement ? `${session.improvement > 0 ? '+' : ''}${session.improvement.toFixed(1)}%` : '-'}
-                                            </td>
-                                        </tr>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {/* Expanded Exercise Details */}
-                                        {isExpanded && (
-                                            <tr key={`${session.id}-expanded`}>
-                                                <td colSpan={6} className="px-4 py-4 bg-slate-50/50">
-                                                    <div className="space-y-3">
-                                                        <h4 className="font-semibold text-slate-700 text-sm mb-3">Exercise Breakdown</h4>
-                                                        <div className="grid gap-3">
-                                                            {session.exercises.map((exercise, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className="flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200 shadow-sm"
-                                                                >
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="flex-1">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-slate-800">{exercise.name}</span>
-                                                                                {exercise.isPR && (
-                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
-                                                                                        <Trophy className="h-3 w-3" /> PR
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-4 mt-1 text-sm">
-                                                                                <span className="text-slate-900 font-semibold">
-                                                                                    {exercise.currentWeight} kg
-                                                                                </span>
-                                                                                {exercise.previousWorkout && (
-                                                                                    <span className="text-slate-500">
-                                                                                        Previous: {exercise.previousWorkout.weight} kg
-                                                                                        {exercise.currentWeight > exercise.previousWorkout.weight && (
-                                                                                            <span className="text-green-600 mr-1">
-                                                                                                (+{(exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)})
-                                                                                            </span>
-                                                                                        )}
-                                                                                        {exercise.currentWeight < exercise.previousWorkout.weight && (
-                                                                                            <span className="text-red-500 mr-1">
-                                                                                                ({(exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)})
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Mini Sparkline */}
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-xs text-slate-400">Trend</span>
-                                                                        <MiniSparkline data={exercise.history.map(h => h.weight)} />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-
-                                                        {/* Previous Workout Comparison */}
-                                                        {prevWorkout && (
-                                                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                                                <h5 className="font-semibold text-blue-800 text-sm mb-2">
-                                                                    Compared to Previous {session.day_name} ({new Date(prevWorkout.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit' })})
-                                                                </h5>
-                                                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                                                    <div>
-                                                                        <span className="text-blue-600">This Workout:</span>
-                                                                        <span className="font-bold text-blue-900 mr-2">{session.total_volume.toLocaleString()} kg</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="text-blue-600">Previous:</span>
-                                                                        <span className="font-bold text-blue-900 mr-2">{prevWorkout.total_volume.toLocaleString()} kg</span>
-                                                                    </div>
-                                                                </div>
+                                {/* Expanded Content */}
+                                {isExpanded && (
+                                    <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                                        <h4 className="font-semibold text-slate-700 text-sm">Exercises</h4>
+                                        <div className="space-y-2">
+                                            {session.exercises.map((exercise, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="bg-white rounded-lg p-3 border border-slate-200"
+                                                >
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="font-medium text-slate-800 text-sm truncate">{exercise.name}</span>
+                                                                {exercise.isPR && (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold shrink-0">
+                                                                        <Trophy className="h-3 w-3" /> PR
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        )}
+                                                            <div className="flex items-center gap-2 mt-1 text-sm">
+                                                                <span className="text-slate-900 font-semibold">
+                                                                    {exercise.currentWeight} kg
+                                                                </span>
+                                                                {exercise.previousWorkout && (
+                                                                    <span className={`text-xs ${
+                                                                        exercise.currentWeight > exercise.previousWorkout.weight ? 'text-green-600' :
+                                                                        exercise.currentWeight < exercise.previousWorkout.weight ? 'text-red-500' : 'text-slate-400'
+                                                                    }`}>
+                                                                        {exercise.currentWeight > exercise.previousWorkout.weight && '+'}
+                                                                        {exercise.currentWeight !== exercise.previousWorkout.weight &&
+                                                                            (exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)
+                                                                        }
+                                                                        {exercise.currentWeight !== exercise.previousWorkout.weight && ' kg'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <MiniSparkline data={exercise.history.map(h => h.weight)} />
                                                     </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Previous Workout Comparison */}
+                                        {prevWorkout && (
+                                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                <h5 className="font-semibold text-blue-800 text-xs mb-2">
+                                                    vs Previous {session.day_name}
+                                                </h5>
+                                                <div className="flex justify-between text-sm">
+                                                    <div>
+                                                        <span className="text-blue-600 text-xs">Now: </span>
+                                                        <span className="font-bold text-blue-900">{session.total_volume.toLocaleString()}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-blue-600 text-xs">Then: </span>
+                                                        <span className="font-bold text-blue-900">{prevWorkout.total_volume.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block rounded-lg border bg-white shadow overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-700 font-semibold border-b">
+                                <tr>
+                                    <th className="px-4 py-3 w-8"></th>
+                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3">Workout</th>
+                                    <th className="px-4 py-3 text-center">Week #</th>
+                                    <th className="px-4 py-3 text-right">Volume</th>
+                                    <th className="px-4 py-3 text-right">Improvement</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {tableSessions.map((session) => {
+                                    const prevWorkout = findPreviousWorkout(session, tableSessions)
+                                    const isExpanded = expandedSession === session.id
+
+                                    return (
+                                        <React.Fragment key={session.id}>
+                                            <tr
+                                                className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${session.isDeload ? 'bg-amber-50/30' : ''}`}
+                                                onClick={() => toggleExpand(session.id)}
+                                            >
+                                                <td className="px-4 py-3">
+                                                    {isExpanded ? (
+                                                        <ChevronUp className="h-4 w-4 text-slate-400" />
+                                                    ) : (
+                                                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 font-medium text-slate-900">
+                                                    {new Date(session.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-600 flex items-center gap-2">
+                                                    {session.day_name}
+                                                    {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${session.isDeload ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                                                        }`}>
+                                                        W{session.weekNumber}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono font-medium text-slate-700">
+                                                    {session.total_volume.toLocaleString()}
+                                                </td>
+                                                <td className={`px-4 py-3 text-right font-bold ${!session.improvement ? 'text-slate-400' :
+                                                    session.improvement > 0 ? 'text-green-600' : 'text-red-500'
+                                                    }`}>
+                                                    {session.improvement ? `${session.improvement > 0 ? '+' : ''}${session.improvement.toFixed(1)}%` : '-'}
                                                 </td>
                                             </tr>
-                                        )}
-                                    </>
-                                )
-                            })}
-                        </tbody>
-                    </table>
+
+                                            {/* Expanded Exercise Details */}
+                                            {isExpanded && (
+                                                <tr>
+                                                    <td colSpan={6} className="px-4 py-4 bg-slate-50/50">
+                                                        <div className="space-y-3">
+                                                            <h4 className="font-semibold text-slate-700 text-sm mb-3">Exercise Breakdown</h4>
+                                                            <div className="grid gap-3">
+                                                                {session.exercises.map((exercise, idx) => (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200 shadow-sm"
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="flex-1">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="font-medium text-slate-800">{exercise.name}</span>
+                                                                                    {exercise.isPR && (
+                                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
+                                                                                            <Trophy className="h-3 w-3" /> PR
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-4 mt-1 text-sm">
+                                                                                    <span className="text-slate-900 font-semibold">
+                                                                                        {exercise.currentWeight} kg
+                                                                                    </span>
+                                                                                    {exercise.previousWorkout && (
+                                                                                        <span className="text-slate-500">
+                                                                                            Previous: {exercise.previousWorkout.weight} kg
+                                                                                            {exercise.currentWeight > exercise.previousWorkout.weight && (
+                                                                                                <span className="text-green-600 mr-1">
+                                                                                                    (+{(exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)})
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {exercise.currentWeight < exercise.previousWorkout.weight && (
+                                                                                                <span className="text-red-500 mr-1">
+                                                                                                    ({(exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)})
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Mini Sparkline */}
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs text-slate-400">Trend</span>
+                                                                            <MiniSparkline data={exercise.history.map(h => h.weight)} />
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Previous Workout Comparison */}
+                                                            {prevWorkout && (
+                                                                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                                    <h5 className="font-semibold text-blue-800 text-sm mb-2">
+                                                                        Compared to Previous {session.day_name} ({new Date(prevWorkout.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit' })})
+                                                                    </h5>
+                                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                                        <div>
+                                                                            <span className="text-blue-600">This Workout:</span>
+                                                                            <span className="font-bold text-blue-900 mr-2">{session.total_volume.toLocaleString()} kg</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-blue-600">Previous:</span>
+                                                                            <span className="font-bold text-blue-900 mr-2">{prevWorkout.total_volume.toLocaleString()} kg</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
