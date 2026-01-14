@@ -29,6 +29,14 @@ interface ExerciseInput {
     completed: boolean
 }
 
+interface SavedSession {
+    workoutType: WorkoutType
+    exerciseInputs: ExerciseInput[]
+    timestamp: number
+}
+
+const STORAGE_KEY = 'ppl_workout_session'
+
 export default function BodyPage() {
     const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([])
     const [loading, setLoading] = useState(false)
@@ -36,9 +44,60 @@ export default function BodyPage() {
     const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>([])
     const [sessionStarted, setSessionStarted] = useState(false)
 
+    // Load saved session on mount
     useEffect(() => {
         fetchWorkoutLogs()
+        loadSavedSession()
     }, [])
+
+    // Auto-save session whenever inputs change
+    useEffect(() => {
+        if (sessionStarted && exerciseInputs.length > 0) {
+            saveSessionToStorage()
+        }
+    }, [exerciseInputs, sessionStarted, currentWorkout])
+
+    const loadSavedSession = () => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY)
+            if (saved) {
+                const session: SavedSession = JSON.parse(saved)
+                // Check if session is less than 24 hours old
+                const hoursSinceStart = (Date.now() - session.timestamp) / (1000 * 60 * 60)
+                if (hoursSinceStart < 24) {
+                    setCurrentWorkout(session.workoutType)
+                    setExerciseInputs(session.exerciseInputs)
+                    setSessionStarted(true)
+                } else {
+                    // Session too old, clear it
+                    localStorage.removeItem(STORAGE_KEY)
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load saved session:', e)
+        }
+    }
+
+    const saveSessionToStorage = () => {
+        try {
+            const session: SavedSession = {
+                workoutType: currentWorkout,
+                exerciseInputs,
+                timestamp: Date.now()
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+        } catch (e) {
+            console.error('Failed to save session:', e)
+        }
+    }
+
+    const clearSavedSession = () => {
+        try {
+            localStorage.removeItem(STORAGE_KEY)
+        } catch (e) {
+            console.error('Failed to clear session:', e)
+        }
+    }
 
     const fetchWorkoutLogs = async () => {
         const { data } = await supabase
@@ -123,6 +182,7 @@ export default function BodyPage() {
         })
 
         if (!error) {
+            clearSavedSession()
             setSessionStarted(false)
             setExerciseInputs([])
             fetchWorkoutLogs()
@@ -418,7 +478,13 @@ export default function BodyPage() {
                                 {loading ? "שומר..." : "סיים אימון ושמור"}
                             </Button>
                             <Button
-                                onClick={() => setSessionStarted(false)}
+                                onClick={() => {
+                                    if (confirm("האם אתה בטוח? הפרוגרס יימחק")) {
+                                        clearSavedSession()
+                                        setSessionStarted(false)
+                                        setExerciseInputs([])
+                                    }
+                                }}
                                 variant="outline"
                                 className="sm:w-auto px-6 md:px-10 text-base md:text-lg font-semibold py-4 md:py-7 rounded-xl md:rounded-2xl border-2 border-slate-300 hover:bg-slate-100 hover:border-slate-400 transition-all duration-300"
                             >
