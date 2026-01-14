@@ -18,6 +18,7 @@ interface WorkoutLog {
         exercise: string
         weight: number
         reps: number
+        targetReps: string
         completed: boolean
     }[]
 }
@@ -26,6 +27,7 @@ interface ExerciseInput {
     exercise: string
     weight: string
     reps: number
+    targetReps: string
     completed: boolean
 }
 
@@ -130,10 +132,17 @@ export default function BodyPage() {
             exercise: ex.name,
             weight: "",
             reps: 0,
+            targetReps: String(ex.reps),
             completed: false
         }))
         setExerciseInputs(inputs)
         setSessionStarted(true)
+    }
+
+    const updateTargetReps = (index: number, targetReps: string) => {
+        const updated = [...exerciseInputs]
+        updated[index].targetReps = targetReps
+        setExerciseInputs(updated)
     }
 
     const updateWeight = (index: number, weight: string) => {
@@ -173,6 +182,7 @@ export default function BodyPage() {
             exercise: input.exercise,
             weight: parseFloat(input.weight) || 0,
             reps: input.reps || 0,
+            targetReps: input.targetReps || "",
             completed: input.completed
         }))
 
@@ -318,12 +328,19 @@ export default function BodyPage() {
                                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
                                                     {exercise.sets} סטים
                                                 </span>
-                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
-                                                    {exercise.reps} חזרות
-                                                </span>
                                                 <span className="px-2 py-0.5 rounded bg-gradient-to-br from-red-500 to-pink-600 text-white text-xs font-bold">
                                                     RPE {exercise.rpe}
                                                 </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-xs text-slate-500">יעד:</span>
+                                                <input
+                                                    type="text"
+                                                    value={exerciseInputs[index]?.targetReps || ""}
+                                                    onChange={(e) => updateTargetReps(index, e.target.value)}
+                                                    className="w-16 px-2 py-1 border border-slate-200 rounded text-center text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                                />
+                                                <span className="text-xs text-slate-500">חזרות</span>
                                             </div>
                                         </div>
                                         <button
@@ -410,9 +427,12 @@ export default function BodyPage() {
                                                     </span>
                                                 </td>
                                                 <td className="text-center px-4 py-5">
-                                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-3 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm">
-                                                        {exercise.reps}
-                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        value={exerciseInputs[index]?.targetReps || ""}
+                                                        onChange={(e) => updateTargetReps(index, e.target.value)}
+                                                        className="w-16 px-2 py-2 border border-slate-200 rounded-lg text-center font-semibold text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white hover:border-slate-300"
+                                                    />
                                                 </td>
                                                 <td className="text-center px-4 py-5">
                                                     <span className="inline-flex items-center justify-center w-12 h-8 rounded-lg bg-gradient-to-br from-red-500 to-pink-600 text-white font-bold text-sm shadow-md">
@@ -590,12 +610,12 @@ export default function BodyPage() {
                                                                 }`}>
                                                                 {ex.exercise}
                                                             </div>
-                                                            <div className={`text-xs font-bold flex items-center gap-2 ${ex.completed ? "text-green-700" : "text-slate-400"
+                                                            <div className={`text-xs font-bold flex items-center gap-2 flex-wrap ${ex.completed ? "text-green-700" : "text-slate-400"
                                                                 }`}>
                                                                 <span>{ex.weight} ק״ג</span>
-                                                                {ex.reps > 0 && (
+                                                                {(ex.reps > 0 || ex.targetReps) && (
                                                                     <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[10px]">
-                                                                        {ex.reps} חזרות
+                                                                        {ex.reps}/{ex.targetReps || "?"} חזרות
                                                                     </span>
                                                                 )}
                                                             </div>
