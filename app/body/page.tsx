@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui-components"
-import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp } from "lucide-react"
+import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp, Minus, Plus } from "lucide-react"
 import Link from "next/link"
 import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, type WorkoutType } from "./workout-data"
 
@@ -17,6 +17,7 @@ interface WorkoutLog {
     exercises_data: {
         exercise: string
         weight: number
+        reps: number
         completed: boolean
     }[]
 }
@@ -24,6 +25,7 @@ interface WorkoutLog {
 interface ExerciseInput {
     exercise: string
     weight: string
+    reps: number
     completed: boolean
 }
 
@@ -68,6 +70,7 @@ export default function BodyPage() {
         const inputs = program.exercises.map(ex => ({
             exercise: ex.name,
             weight: "",
+            reps: 0,
             completed: false
         }))
         setExerciseInputs(inputs)
@@ -77,6 +80,24 @@ export default function BodyPage() {
     const updateWeight = (index: number, weight: string) => {
         const updated = [...exerciseInputs]
         updated[index].weight = weight
+        setExerciseInputs(updated)
+    }
+
+    const updateReps = (index: number, reps: number) => {
+        const updated = [...exerciseInputs]
+        updated[index].reps = Math.max(0, reps)
+        setExerciseInputs(updated)
+    }
+
+    const incrementReps = (index: number) => {
+        const updated = [...exerciseInputs]
+        updated[index].reps = updated[index].reps + 1
+        setExerciseInputs(updated)
+    }
+
+    const decrementReps = (index: number) => {
+        const updated = [...exerciseInputs]
+        updated[index].reps = Math.max(0, updated[index].reps - 1)
         setExerciseInputs(updated)
     }
 
@@ -92,6 +113,7 @@ export default function BodyPage() {
         const exercisesData = exerciseInputs.map(input => ({
             exercise: input.exercise,
             weight: parseFloat(input.weight) || 0,
+            reps: input.reps || 0,
             completed: input.completed
         }))
 
@@ -256,7 +278,7 @@ export default function BodyPage() {
                                             />
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 mb-3">
                                         <span className="text-xs text-slate-500">משקל:</span>
                                         <input
                                             type="number"
@@ -267,6 +289,27 @@ export default function BodyPage() {
                                             className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-sm"
                                         />
                                         <span className="text-xs text-slate-500">ק״ג</span>
+                                    </div>
+                                    {/* Rep Counter */}
+                                    <div className="flex items-center justify-between bg-slate-50 rounded-xl p-3">
+                                        <span className="text-xs font-medium text-slate-600">חזרות שבוצעו:</span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => decrementReps(index)}
+                                                className="w-9 h-9 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:border-slate-300 active:scale-95 transition-all"
+                                            >
+                                                <Minus className="h-4 w-4" />
+                                            </button>
+                                            <span className="w-12 text-center text-xl font-bold text-slate-800">
+                                                {exerciseInputs[index]?.reps || 0}
+                                            </span>
+                                            <button
+                                                onClick={() => incrementReps(index)}
+                                                className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center text-white hover:opacity-90 active:scale-95 transition-all shadow-md"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -280,9 +323,10 @@ export default function BodyPage() {
                                         <tr className="bg-gradient-to-l from-slate-50 to-slate-100 border-b-2 border-slate-200">
                                             <th className="text-right px-8 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">תרגיל</th>
                                             <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">סטים</th>
-                                            <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">חזרות</th>
+                                            <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">יעד</th>
                                             <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">RPE</th>
                                             <th className="text-center px-8 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">משקל (ק״ג)</th>
+                                            <th className="text-center px-6 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">חזרות</th>
                                             <th className="text-center px-6 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">סטטוס</th>
                                         </tr>
                                     </thead>
@@ -324,6 +368,25 @@ export default function BodyPage() {
                                                         onChange={(e) => updateWeight(index, e.target.value)}
                                                         className="w-24 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:border-slate-300"
                                                     />
+                                                </td>
+                                                <td className="text-center px-6 py-5">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => decrementReps(index)}
+                                                            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-200 active:scale-95 transition-all"
+                                                        >
+                                                            <Minus className="h-4 w-4" />
+                                                        </button>
+                                                        <span className="w-10 text-center text-lg font-bold text-slate-800">
+                                                            {exerciseInputs[index]?.reps || 0}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => incrementReps(index)}
+                                                            className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center text-white hover:opacity-90 active:scale-95 transition-all shadow-md"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td className="text-center px-6 py-5">
                                                     <button
@@ -461,9 +524,14 @@ export default function BodyPage() {
                                                                 }`}>
                                                                 {ex.exercise}
                                                             </div>
-                                                            <div className={`text-xs font-bold ${ex.completed ? "text-green-700" : "text-slate-400"
+                                                            <div className={`text-xs font-bold flex items-center gap-2 ${ex.completed ? "text-green-700" : "text-slate-400"
                                                                 }`}>
-                                                                {ex.weight} ק״ג
+                                                                <span>{ex.weight} ק״ג</span>
+                                                                {ex.reps > 0 && (
+                                                                    <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[10px]">
+                                                                        {ex.reps} חזרות
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
