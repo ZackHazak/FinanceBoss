@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui-components"
-import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy } from "lucide-react"
+import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy, Table2, BarChart3 } from "lucide-react"
 import { WORKOUT_PROGRAMS, type WorkoutType } from "@/app/body/workout-data"
 
 interface RawWorkoutLog {
@@ -14,6 +14,8 @@ interface RawWorkoutLog {
     exercises_data: {
         exercise: string
         weight: number
+        reps?: number
+        targetReps?: string
         completed: boolean
     }[]
 }
@@ -94,6 +96,8 @@ export function FitnessProgress() {
     const [sessions, setSessions] = useState<ProcessedSession[]>([])
     const [loading, setLoading] = useState(true)
     const [expandedSession, setExpandedSession] = useState<string | null>(null)
+    const [viewMode, setViewMode] = useState<'history' | 'compare'>('history')
+    const [selectedWorkoutType, setSelectedWorkoutType] = useState<WorkoutType>('PULL')
 
     useEffect(() => {
         fetchData()
@@ -375,7 +379,181 @@ export function FitnessProgress() {
                 </div>
             </Card>
 
-            {/* Mobile: Card-based layout, Desktop: Table */}
+            {/* View Toggle & Workout Type Selector */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setViewMode('history')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                            viewMode === 'history'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                        <BarChart3 className="h-4 w-4" />
+                        היסטוריה
+                    </button>
+                    <button
+                        onClick={() => setViewMode('compare')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                            viewMode === 'compare'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                        <Table2 className="h-4 w-4" />
+                        השוואה
+                    </button>
+                </div>
+
+                {viewMode === 'compare' && (
+                    <div className="flex gap-2">
+                        {(['PULL', 'PUSH', 'LEGS'] as WorkoutType[]).map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setSelectedWorkoutType(type)}
+                                className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+                                    selectedWorkoutType === type
+                                        ? type === 'PULL' ? 'bg-blue-600 text-white'
+                                        : type === 'PUSH' ? 'bg-red-600 text-white'
+                                        : 'bg-green-600 text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Comparison Table View */}
+            {viewMode === 'compare' && (
+                <div className="rounded-xl border bg-white shadow-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                        {(() => {
+                            // Filter sessions by selected workout type
+                            const filteredSessions = sessions
+                                .filter(s => s.day_name === selectedWorkoutType)
+                                .slice(-6) // Last 6 workouts of this type
+
+                            if (filteredSessions.length === 0) {
+                                return (
+                                    <div className="p-8 text-center text-slate-500">
+                                        אין אימוני {selectedWorkoutType} עדיין
+                                    </div>
+                                )
+                            }
+
+                            // Get all unique exercises
+                            const allExercises = new Set<string>()
+                            filteredSessions.forEach(s => {
+                                s.rawExercises.forEach(ex => allExercises.add(ex.exercise))
+                            })
+                            const exerciseList = Array.from(allExercises)
+
+                            return (
+                                <table className="w-full text-sm">
+                                    <thead className="bg-slate-50 border-b-2 border-slate-200">
+                                        <tr>
+                                            <th className="text-right px-4 py-3 font-bold text-slate-700 sticky right-0 bg-slate-50 min-w-[140px]">
+                                                תרגיל
+                                            </th>
+                                            {filteredSessions.map((session, idx) => (
+                                                <th key={session.id} className="px-3 py-3 text-center min-w-[100px]">
+                                                    <div className="font-bold text-slate-800">
+                                                        {new Date(session.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit' })}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 font-normal">
+                                                        W{session.weekNumber}
+                                                    </div>
+                                                    {session.isPR && (
+                                                        <Trophy className="h-3 w-3 text-amber-500 mx-auto mt-1" />
+                                                    )}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {exerciseList.map(exerciseName => (
+                                            <tr key={exerciseName} className="hover:bg-slate-50/50">
+                                                <td className="px-4 py-3 font-medium text-slate-800 sticky right-0 bg-white border-l">
+                                                    {exerciseName}
+                                                </td>
+                                                {filteredSessions.map((session, idx) => {
+                                                    const exercise = session.rawExercises.find(
+                                                        ex => ex.exercise === exerciseName
+                                                    )
+                                                    const prevSession = idx > 0 ? filteredSessions[idx - 1] : null
+                                                    const prevExercise = prevSession?.rawExercises.find(
+                                                        ex => ex.exercise === exerciseName
+                                                    )
+
+                                                    const weight = exercise?.weight || 0
+                                                    const prevWeight = prevExercise?.weight || 0
+                                                    const diff = weight - prevWeight
+                                                    const showDiff = prevWeight > 0 && weight > 0 && diff !== 0
+
+                                                    return (
+                                                        <td key={session.id} className="px-3 py-3 text-center">
+                                                            {weight > 0 ? (
+                                                                <div>
+                                                                    <span className="font-bold text-slate-800">
+                                                                        {weight}
+                                                                    </span>
+                                                                    <span className="text-slate-400 text-xs mr-0.5">kg</span>
+                                                                    {showDiff && (
+                                                                        <div className={`text-xs font-semibold ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                                            {diff > 0 ? '+' : ''}{diff}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-300">-</span>
+                                                            )}
+                                                        </td>
+                                                    )
+                                                })}
+                                            </tr>
+                                        ))}
+                                        {/* Total Volume Row */}
+                                        <tr className="bg-slate-50 font-bold border-t-2">
+                                            <td className="px-4 py-3 text-slate-700 sticky right-0 bg-slate-50 border-l">
+                                                סה״כ Volume
+                                            </td>
+                                            {filteredSessions.map((session, idx) => {
+                                                const prevSession = idx > 0 ? filteredSessions[idx - 1] : null
+                                                const diff = prevSession
+                                                    ? session.total_volume - prevSession.total_volume
+                                                    : 0
+                                                const pctChange = prevSession && prevSession.total_volume > 0
+                                                    ? ((diff / prevSession.total_volume) * 100).toFixed(1)
+                                                    : null
+
+                                                return (
+                                                    <td key={session.id} className="px-3 py-3 text-center">
+                                                        <div className="text-slate-900">
+                                                            {session.total_volume.toLocaleString()}
+                                                        </div>
+                                                        {pctChange && diff !== 0 && (
+                                                            <div className={`text-xs ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                                {diff > 0 ? '+' : ''}{pctChange}%
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            )
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {/* History View - Mobile: Card-based layout, Desktop: Table */}
+            {viewMode === 'history' && (
             <div className="space-y-3">
                 <h3 className="text-base md:text-lg font-bold text-slate-900 px-1">Workout History</h3>
 
@@ -634,6 +812,7 @@ export function FitnessProgress() {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     )
 }
