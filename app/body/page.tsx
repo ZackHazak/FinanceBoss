@@ -80,6 +80,12 @@ export default function BodyPage() {
         setExerciseInputs(updated)
     }
 
+    const updateExerciseName = (index: number, name: string) => {
+        const updated = [...exerciseInputs]
+        updated[index].exercise = name
+        setExerciseInputs(updated)
+    }
+
     const toggleCompleted = (index: number) => {
         const updated = [...exerciseInputs]
         updated[index].completed = !updated[index].completed
@@ -229,9 +235,12 @@ export default function BodyPage() {
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
-                                            <h3 className={`font-semibold text-sm ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
-                                                {exercise.name}
-                                            </h3>
+                                            <input
+                                                type="text"
+                                                value={exerciseInputs[index]?.exercise || ""}
+                                                onChange={(e) => updateExerciseName(index, e.target.value)}
+                                                className={`font-semibold text-sm bg-transparent border-b border-transparent hover:border-slate-300 focus:border-orange-500 focus:outline-none w-full ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}
+                                            />
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
                                                     {exercise.sets} סטים
@@ -296,9 +305,12 @@ export default function BodyPage() {
                                                     }`}
                                             >
                                                 <td className="text-right px-8 py-5">
-                                                    <span className={`font-semibold text-base ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
-                                                        {exercise.name}
-                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        value={exerciseInputs[index]?.exercise || ""}
+                                                        onChange={(e) => updateExerciseName(index, e.target.value)}
+                                                        className={`font-semibold text-base bg-transparent border-b-2 border-transparent hover:border-slate-200 focus:border-orange-500 focus:outline-none w-full ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}
+                                                    />
                                                 </td>
                                                 <td className="text-center px-4 py-5">
                                                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm">
