@@ -121,15 +121,15 @@ export function GoalsEditDialog({ isOpen, onClose, goals, onSuccess }: GoalsEdit
     ]
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 overflow-y-auto">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Dialog */}
-            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden mb-8">
                 {/* Header */}
                 <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-5">
                     <div className="flex items-center justify-between">
