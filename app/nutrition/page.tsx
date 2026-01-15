@@ -9,6 +9,7 @@ import { MealCard } from "./components/meal-card"
 import { WaterTracker } from "./components/water-tracker"
 import { WeightTracker } from "./components/weight-tracker"
 import { AddFoodDialog } from "./components/add-food-dialog"
+import { GoalsEditDialog } from "./components/goals-edit-dialog"
 import type { Meal, WaterLog, WeightLog, NutritionGoals } from "@/lib/types/nutrition"
 
 export default function NutritionPage() {
@@ -18,6 +19,7 @@ export default function NutritionPage() {
     const [weightLog, setWeightLog] = useState<WeightLog | null>(null)
     const [goals, setGoals] = useState<NutritionGoals | null>(null)
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false)
+    const [isGoalsEditOpen, setIsGoalsEditOpen] = useState(false)
     const [activeMealType, setActiveMealType] = useState<Meal['meal_type']>('breakfast')
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -230,6 +232,7 @@ export default function NutritionPage() {
                         totals={dailyTotals}
                         goals={goals}
                         totalWater={totalWater}
+                        onEditGoals={() => setIsGoalsEditOpen(true)}
                     />
 
                     {/* Main Grid */}
@@ -276,6 +279,14 @@ export default function NutritionPage() {
                 onClose={() => setIsAddFoodOpen(false)}
                 mealType={activeMealType}
                 date={selectedDate}
+                onSuccess={fetchDayData}
+            />
+
+            {/* Goals Edit Dialog */}
+            <GoalsEditDialog
+                isOpen={isGoalsEditOpen}
+                onClose={() => setIsGoalsEditOpen(false)}
+                goals={goals}
                 onSuccess={fetchDayData}
             />
         </div>

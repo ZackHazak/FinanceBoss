@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Flame, Beef, Wheat, Droplet, TrendingUp, Check } from "lucide-react"
+import { Flame, Beef, Wheat, Droplet, TrendingUp, Check, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { NutritionGoals } from "@/lib/types/nutrition"
 
@@ -14,9 +14,10 @@ interface DailySummaryProps {
     }
     goals: NutritionGoals | null
     totalWater: number
+    onEditGoals?: () => void
 }
 
-export function DailySummary({ totals, goals, totalWater }: DailySummaryProps) {
+export function DailySummary({ totals, goals, totalWater, onEditGoals }: DailySummaryProps) {
     const defaultGoals = {
         calories_target: 2000,
         protein_target: 150,
@@ -79,7 +80,18 @@ export function DailySummary({ totals, goals, totalWater }: DailySummaryProps) {
     ]
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="relative">
+            {/* Edit Goals Button */}
+            {onEditGoals && (
+                <button
+                    onClick={onEditGoals}
+                    className="absolute -top-1 left-0 z-10 p-2 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm hover:shadow-md hover:bg-white transition-all group"
+                    title="ערוך יעדים"
+                >
+                    <Settings className="h-4 w-4 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+                </button>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {macros.map((macro, index) => {
                 const percentage = Math.min((macro.value / macro.target) * 100, 100)
                 const isOver = macro.value > macro.target
@@ -211,6 +223,7 @@ export function DailySummary({ totals, goals, totalWater }: DailySummaryProps) {
                     </motion.div>
                 )
             })}
+            </div>
         </div>
     )
 }
