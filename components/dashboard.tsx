@@ -5,6 +5,7 @@ import { ArrowUpRight, ArrowDownRight, Trash2, Wallet } from "lucide-react"
 import { Button } from "@/components/ui-components"
 import { AddTransactionDialog } from "@/components/add-transaction-dialog"
 import { supabase } from "@/lib/supabase"
+import { useTransactionUpdates } from "@/lib/contexts/transaction-context"
 
 interface Transaction {
     id: string
@@ -21,6 +22,7 @@ interface DashboardProps {
 
 export function Dashboard({ initialTransactions }: DashboardProps) {
     const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
+    const { notifyTransactionChange } = useTransactionUpdates()
 
     useEffect(() => {
         setTransactions(initialTransactions)
@@ -50,6 +52,8 @@ export function Dashboard({ initialTransactions }: DashboardProps) {
                 console.error("Error deleting transaction:", error)
                 alert("שגיאה במחיקת התנועה")
                 setTransactions(previousTransactions) // Revert on error
+            } else {
+                notifyTransactionChange() // Notify expense tracker to refresh
             }
         }
     }

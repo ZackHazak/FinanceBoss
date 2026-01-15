@@ -11,6 +11,7 @@ import {
     formatMonthHebrew,
     getCategoryLabel
 } from "@/lib/types/finance"
+import { useTransactionUpdates } from "@/lib/contexts/transaction-context"
 
 export function ExpenseTracker() {
     const [budgetsWithSpent, setBudgetsWithSpent] = useState<BudgetWithSpent[]>([])
@@ -20,6 +21,7 @@ export function ExpenseTracker() {
     const [isSaving, setIsSaving] = useState(false)
     const [isExpanded, setIsExpanded] = useState(true)
     const currentMonth = getCurrentMonthDate()
+    const { updateTrigger } = useTransactionUpdates()
 
     const [formData, setFormData] = useState({
         category: 'food',
@@ -28,9 +30,10 @@ export function ExpenseTracker() {
     })
     const [showCustomInput, setShowCustomInput] = useState(false)
 
+    // Re-fetch when transactions change (add/delete)
     useEffect(() => {
         fetchBudgetsWithSpending()
-    }, [])
+    }, [updateTrigger])
 
     async function fetchBudgetsWithSpending() {
         setIsLoading(true)

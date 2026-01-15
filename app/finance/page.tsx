@@ -1,5 +1,4 @@
-import { Dashboard } from "@/components/dashboard"
-import { FinanceBudgetSection } from "./components/finance-budget-section"
+import { FinanceContent } from "./components/finance-content"
 import { supabase } from "@/lib/supabase"
 
 export const revalidate = 0 // Disable caching for real-time feel
@@ -25,10 +24,7 @@ export default async function Home() {
                 <p className="text-sm text-slate-500">הנה מה שקורה בחשבון שלך</p>
             </header>
 
-            <Dashboard initialTransactions={txs} />
-
-            {/* Budget Section */}
-            <FinanceBudgetSection />
+            <FinanceContent initialTransactions={txs} />
         </main>
     )
 }

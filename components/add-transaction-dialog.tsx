@@ -15,8 +15,10 @@ import {
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/types/finance"
+import { useTransactionUpdates } from "@/lib/contexts/transaction-context"
 
 export function AddTransactionDialog() {
+  const { notifyTransactionChange } = useTransactionUpdates()
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState("")
   const [description, setDescription] = useState("")
@@ -66,6 +68,7 @@ export function AddTransactionDialog() {
       setCustomCategory("")
       setShowCustomInput(false)
       router.refresh() // Refresh server components
+      notifyTransactionChange() // Notify expense tracker to refresh
     }
     setLoading(false)
   }
