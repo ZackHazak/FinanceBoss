@@ -15,21 +15,21 @@ interface GoalsEditDialogProps {
 export function GoalsEditDialog({ isOpen, onClose, goals, onSuccess }: GoalsEditDialogProps) {
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
-        calories_target: 2200,
-        protein_target: 160,
-        carbs_target: 220,
-        fat_target: 70,
-        water_target_ml: 2500
+        calories_target: "2200",
+        protein_target: "160",
+        carbs_target: "220",
+        fat_target: "70",
+        water_target_ml: "2500"
     })
 
     useEffect(() => {
         if (goals) {
             setFormData({
-                calories_target: goals.calories_target,
-                protein_target: goals.protein_target,
-                carbs_target: goals.carbs_target,
-                fat_target: goals.fat_target,
-                water_target_ml: goals.water_target_ml
+                calories_target: String(goals.calories_target),
+                protein_target: String(goals.protein_target),
+                carbs_target: String(goals.carbs_target),
+                fat_target: String(goals.fat_target),
+                water_target_ml: String(goals.water_target_ml)
             })
         }
     }, [goals])
@@ -37,17 +37,19 @@ export function GoalsEditDialog({ isOpen, onClose, goals, onSuccess }: GoalsEdit
     const handleSave = async () => {
         setLoading(true)
         try {
+            const dataToSave = {
+                calories_target: parseInt(formData.calories_target) || 0,
+                protein_target: parseInt(formData.protein_target) || 0,
+                carbs_target: parseInt(formData.carbs_target) || 0,
+                fat_target: parseInt(formData.fat_target) || 0,
+                water_target_ml: parseInt(formData.water_target_ml) || 0
+            }
+
             if (goals?.id) {
                 // Update existing goals
                 const { error } = await supabase
                     .from('nutrition_goals')
-                    .update({
-                        calories_target: formData.calories_target,
-                        protein_target: formData.protein_target,
-                        carbs_target: formData.carbs_target,
-                        fat_target: formData.fat_target,
-                        water_target_ml: formData.water_target_ml
-                    })
+                    .update(dataToSave)
                     .eq('id', goals.id)
 
                 if (error) throw error
@@ -56,11 +58,7 @@ export function GoalsEditDialog({ isOpen, onClose, goals, onSuccess }: GoalsEdit
                 const { error } = await supabase
                     .from('nutrition_goals')
                     .insert({
-                        calories_target: formData.calories_target,
-                        protein_target: formData.protein_target,
-                        carbs_target: formData.carbs_target,
-                        fat_target: formData.fat_target,
-                        water_target_ml: formData.water_target_ml,
+                        ...dataToSave,
                         is_active: true
                     })
 
@@ -175,7 +173,7 @@ export function GoalsEditDialog({ isOpen, onClose, goals, onSuccess }: GoalsEdit
                                             value={formData[field.key]}
                                             onChange={(e) => setFormData({
                                                 ...formData,
-                                                [field.key]: parseInt(e.target.value) || 0
+                                                [field.key]: e.target.value
                                             })}
                                             step={field.step}
                                             className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-lg font-semibold text-slate-800"
