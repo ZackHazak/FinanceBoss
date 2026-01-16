@@ -3,6 +3,9 @@ import { Heebo } from 'next/font/google'
 import './globals.css'
 import { ResponsiveNav } from "@/components/responsive-nav"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { DemoSeeder } from "@/components/demo-seeder"
+
+const isPreview = process.env.VERCEL_ENV === 'preview'
 
 const heebo = Heebo({ subsets: ['hebrew', 'latin'] })
 
@@ -51,6 +54,7 @@ export default function RootLayout({
           {children}
         </ResponsiveNav>
         <PWAInstallPrompt />
+        {isPreview && <DemoSeeder />}
       </body>
     </html>
   )
