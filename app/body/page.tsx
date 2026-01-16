@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui-components"
-import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp } from "lucide-react"
+import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, type WorkoutType } from "./workout-data"
 
@@ -30,9 +30,14 @@ interface ExerciseInput {
 export default function BodyPage() {
     const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([])
     const [loading, setLoading] = useState(false)
+    const [saving, setSaving] = useState(false)
     const [currentWorkout, setCurrentWorkout] = useState<WorkoutType>("PULL")
     const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>([])
     const [sessionStarted, setSessionStarted] = useState(false)
+    const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null)
+
+    // Debounce ref for autosave
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         fetchWorkoutLogs()
@@ -63,7 +68,7 @@ export default function BodyPage() {
         setCurrentWorkout(WORKOUT_CYCLE[nextIndex])
     }
 
-    const startSession = () => {
+    const startSession = async () => {
         const program = WORKOUT_PROGRAMS[currentWorkout]
         const inputs = program.exercises.map(ex => ({
             exercise: ex.name,
@@ -72,22 +77,74 @@ export default function BodyPage() {
         }))
         setExerciseInputs(inputs)
         setSessionStarted(true)
+
+        // Create workout record immediately for autosave
+        const exercisesData = inputs.map(input => ({
+            exercise: input.exercise,
+            weight: 0,
+            completed: false
+        }))
+
+        const { data, error } = await supabase.from('ppl_workouts').insert({
+            workout_type: currentWorkout,
+            exercises_data: exercisesData
+        }).select().single()
+
+        if (!error && data) {
+            setActiveWorkoutId(data.id)
+        }
+    }
+
+    // Autosave function with debounce
+    const autosave = (updatedInputs: ExerciseInput[]) => {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+
+        setSaving(true)
+        saveTimeoutRef.current = setTimeout(async () => {
+            if (!activeWorkoutId) {
+                setSaving(false)
+                return
+            }
+
+            const exercisesData = updatedInputs.map(input => ({
+                exercise: input.exercise,
+                weight: parseFloat(input.weight) || 0,
+                completed: input.completed
+            }))
+
+            const { error } = await supabase
+                .from('ppl_workouts')
+                .update({ exercises_data: exercisesData })
+                .eq('id', activeWorkoutId)
+
+            if (error) {
+                console.error("Autosave error:", error)
+            }
+            setSaving(false)
+        }, 1000)
     }
 
     const updateWeight = (index: number, weight: string) => {
         const updated = [...exerciseInputs]
         updated[index].weight = weight
         setExerciseInputs(updated)
+        autosave(updated)
     }
 
     const toggleCompleted = (index: number) => {
         const updated = [...exerciseInputs]
         updated[index].completed = !updated[index].completed
         setExerciseInputs(updated)
+        autosave(updated)
     }
 
     const finishWorkout = async () => {
         setLoading(true)
+
+        // Final save to ensure all data is persisted
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current)
+        }
 
         const exercisesData = exerciseInputs.map(input => ({
             exercise: input.exercise,
@@ -95,20 +152,57 @@ export default function BodyPage() {
             completed: input.completed
         }))
 
-        const { error } = await supabase.from('ppl_workouts').insert({
-            workout_type: currentWorkout,
-            exercises_data: exercisesData
-        })
+        if (activeWorkoutId) {
+            // Update existing record
+            const { error } = await supabase
+                .from('ppl_workouts')
+                .update({ exercises_data: exercisesData })
+                .eq('id', activeWorkoutId)
 
-        if (!error) {
-            setSessionStarted(false)
-            setExerciseInputs([])
-            fetchWorkoutLogs()
+            if (!error) {
+                setSessionStarted(false)
+                setExerciseInputs([])
+                setActiveWorkoutId(null)
+                fetchWorkoutLogs()
+            } else {
+                alert("שגיאה בשמירה")
+            }
         } else {
-            alert("שגיאה בשמירה")
+            // Fallback: create new record if no active workout ID
+            const { error } = await supabase.from('ppl_workouts').insert({
+                workout_type: currentWorkout,
+                exercises_data: exercisesData
+            })
+
+            if (!error) {
+                setSessionStarted(false)
+                setExerciseInputs([])
+                fetchWorkoutLogs()
+            } else {
+                alert("שגיאה בשמירה")
+            }
         }
 
         setLoading(false)
+    }
+
+    const cancelWorkout = async () => {
+        // Delete the workout record that was created on start
+        if (activeWorkoutId) {
+            await supabase
+                .from('ppl_workouts')
+                .delete()
+                .eq('id', activeWorkoutId)
+        }
+
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current)
+        }
+
+        setSessionStarted(false)
+        setExerciseInputs([])
+        setActiveWorkoutId(null)
+        fetchWorkoutLogs()
     }
 
     const deleteWorkout = async (workoutId: string) => {
@@ -204,9 +298,17 @@ export default function BodyPage() {
                             <div className="relative flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2">{program.name}</h2>
-                                    <p className="text-white/80 text-xs md:text-base">
-                                        {new Date().toLocaleDateString("he-IL", { weekday: 'long', month: 'short', day: 'numeric' })}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-white/80 text-xs md:text-base">
+                                            {new Date().toLocaleDateString("he-IL", { weekday: 'long', month: 'short', day: 'numeric' })}
+                                        </p>
+                                        {saving && (
+                                            <span className="flex items-center gap-1 text-white/70 text-xs">
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                שומר...
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-4xl md:text-6xl font-bold text-white/90">
@@ -355,7 +457,7 @@ export default function BodyPage() {
                                 {loading ? "שומר..." : "סיים אימון ושמור"}
                             </Button>
                             <Button
-                                onClick={() => setSessionStarted(false)}
+                                onClick={cancelWorkout}
                                 variant="outline"
                                 className="sm:w-auto px-6 md:px-10 text-base md:text-lg font-semibold py-4 md:py-7 rounded-xl md:rounded-2xl border-2 border-slate-300 hover:bg-slate-100 hover:border-slate-400 transition-all duration-300"
                             >
