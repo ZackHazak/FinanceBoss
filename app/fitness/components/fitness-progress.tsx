@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui-components"
-import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy } from "lucide-react"
+import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy, Flame } from "lucide-react"
 import { WORKOUT_PROGRAMS, type WorkoutType } from "@/app/body/workout-data"
 
 interface RawWorkoutLog {
@@ -35,6 +35,8 @@ interface ProcessedSession {
     id: string
     date: string
     day_name: string
+    day_name_he: string
+    icon: string
     total_volume: number
     weekNumber: number
     isDeload: boolean
@@ -42,15 +44,6 @@ interface ProcessedSession {
     isPR: boolean
     exercises: ExerciseData[]
     rawExercises: { exercise: string; weight: number; completed: boolean }[]
-}
-
-const parseReps = (reps: number | string): number => {
-    if (typeof reps === 'number') return reps
-    if (typeof reps === 'string' && reps.includes('-')) {
-        const [min, max] = reps.split('-').map(Number)
-        return (min + max) / 2
-    }
-    return parseFloat(reps) || 0
 }
 
 // Mini Sparkline component
@@ -118,17 +111,20 @@ export function FitnessProgress() {
         const exerciseHistoryMap: Record<string, { weight: number; date: string; volume: number }[]> = {}
 
         data.forEach(log => {
+            const program = WORKOUT_PROGRAMS[log.workout_type]
+            if (!program) return // Skip if workout type not found in new programs
+
             log.exercises_data?.forEach(ex => {
                 const key = `${log.workout_type}-${ex.exercise.toLowerCase().trim()}`
                 if (!exerciseHistoryMap[key]) {
                     exerciseHistoryMap[key] = []
                 }
-                const program = WORKOUT_PROGRAMS[log.workout_type]
-                const def = program?.exercises.find(e =>
-                    e.name.trim().toLowerCase() === ex.exercise.trim().toLowerCase()
+                const def = program.exercises.find(e =>
+                    e.name.trim().toLowerCase() === ex.exercise.trim().toLowerCase() ||
+                    e.nameHe.trim() === ex.exercise.trim()
                 )
-                const reps = def ? parseReps(def.reps) : 10
-                const volume = ex.weight * reps * (def?.sets || 1)
+                const sets = def?.sets || 3
+                const volume = ex.weight * sets * 10 // Assuming average 10 reps
 
                 exerciseHistoryMap[key].push({
                     weight: ex.weight,
@@ -143,24 +139,44 @@ export function FitnessProgress() {
         const maxVolumeMap: Record<string, number> = {}
 
         const processed: ProcessedSession[] = data.map((log, index) => {
-            const weekNumber = Math.floor(index / 3) + 1
+            const program = WORKOUT_PROGRAMS[log.workout_type]
+            if (!program) {
+                // Handle legacy workout types
+                return {
+                    id: log.id,
+                    date: log.created_at,
+                    day_name: log.workout_type,
+                    day_name_he: log.workout_type,
+                    icon: '🏋️',
+                    total_volume: 0,
+                    weekNumber: Math.floor(index / 5) + 1,
+                    isDeload: false,
+                    improvement: null,
+                    isPR: false,
+                    exercises: [],
+                    rawExercises: log.exercises_data || []
+                }
+            }
+
+            const weekNumber = Math.floor(index / 5) + 1 // 5 training days per week
             const isDeload = weekNumber % 8 === 0
 
-            const program = WORKOUT_PROGRAMS[log.workout_type]
             let total_volume = 0
             let sessionIsPR = false
             const exercises: ExerciseData[] = []
 
-            if (program && log.exercises_data) {
+            if (log.exercises_data) {
                 log.exercises_data.forEach(loggedEx => {
                     const key = `${log.workout_type}-${loggedEx.exercise.toLowerCase().trim()}`
                     const def = program.exercises.find(e =>
-                        e.name.trim().toLowerCase() === loggedEx.exercise.trim().toLowerCase()
+                        e.name.trim().toLowerCase() === loggedEx.exercise.trim().toLowerCase() ||
+                        e.nameHe.trim() === loggedEx.exercise.trim()
                     )
 
-                    if (def && loggedEx.weight > 0) {
-                        const reps = parseReps(def.reps)
-                        const exerciseVolume = def.sets * reps * loggedEx.weight
+                    if (loggedEx.weight > 0) {
+                        const sets = def?.sets || 3
+                        const reps = 10 // Average reps
+                        const exerciseVolume = sets * reps * loggedEx.weight
                         total_volume += exerciseVolume
 
                         // Check if this is a PR (personal record)
@@ -207,6 +223,8 @@ export function FitnessProgress() {
                 id: log.id,
                 date: log.created_at,
                 day_name: log.workout_type,
+                day_name_he: program.nameHe,
+                icon: program.icon,
                 total_volume,
                 weekNumber,
                 isDeload,
@@ -254,9 +272,9 @@ export function FitnessProgress() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 mb-2">
                 <Dumbbell className="h-10 w-10 text-slate-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700">No workouts logged yet</h3>
+            <h3 className="text-lg font-semibold text-slate-700">אין אימונים עדיין</h3>
             <p className="text-slate-500">
-                Go to the <span className="font-bold text-red-500">Body</span> module to log your first workout!
+                עבור למודול <span className="font-bold text-orange-500">Body</span> כדי להתחיל את האימון הראשון!
             </p>
         </div>
     )
@@ -269,24 +287,30 @@ export function FitnessProgress() {
     // Reverse for table display (Newest first)
     const tableSessions = [...sessions].reverse()
 
+    // Count workout types for stats
+    const workoutTypeCounts: Record<string, number> = {}
+    sessions.forEach(s => {
+        workoutTypeCounts[s.day_name] = (workoutTypeCounts[s.day_name] || 0) + 1
+    })
+
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Status Cards - Stack on mobile, 3 cols on desktop */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 <Card className="bg-white shadow border-slate-200">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
-                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">Current Phase</CardTitle>
+                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">שלב נוכחי</CardTitle>
                         <CalendarCheck className="h-4 w-4 text-slate-500" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
-                        <div className="text-xl md:text-2xl font-bold text-slate-900">Week {currentWeek}</div>
+                        <div className="text-xl md:text-2xl font-bold text-slate-900">שבוע {currentWeek}</div>
                         <p className="text-xs text-slate-500 mt-1">
                             {isDeloadWeek ? (
                                 <span className="text-amber-600 font-bold flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" /> DELOAD WEEK
+                                    <AlertCircle className="h-3 w-3" /> שבוע DELOAD
                                 </span>
                             ) : (
-                                <span>{weeksUntilDeload === 8 ? 0 : weeksUntilDeload} weeks until Deload</span>
+                                <span>{weeksUntilDeload === 8 ? 0 : weeksUntilDeload} שבועות עד Deload</span>
                             )}
                         </p>
                     </CardContent>
@@ -294,7 +318,7 @@ export function FitnessProgress() {
 
                 <Card className="bg-white shadow border-slate-200">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
-                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">Last Volume</CardTitle>
+                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">נפח אחרון</CardTitle>
                         <Dumbbell className="h-4 w-4 text-slate-500" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
@@ -309,7 +333,7 @@ export function FitnessProgress() {
                                     <TrendingUp className={`h-3 w-3 ${currentSession.improvement < 0 ? 'rotate-180 text-red-500' : ''}`} />
                                     {Math.abs(currentSession.improvement).toFixed(1)}%
                                 </>
-                            ) : "First workout"}
+                            ) : "אימון ראשון"}
                         </p>
                     </CardContent>
                 </Card>
@@ -317,15 +341,15 @@ export function FitnessProgress() {
                 <Card className={`${isDeloadWeek ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} shadow sm:col-span-2 md:col-span-1`}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
                         <CardTitle className={`text-xs md:text-sm font-medium ${isDeloadWeek ? 'text-amber-700' : 'text-blue-700'}`}>
-                            {isDeloadWeek ? "Deload Advice" : "Training Focus"}
+                            {isDeloadWeek ? "עצת Deload" : "מיקוד אימון"}
                         </CardTitle>
-                        <AlertCircle className={`h-4 w-4 ${isDeloadWeek ? 'text-amber-600' : 'text-blue-600'}`} />
+                        <Flame className={`h-4 w-4 ${isDeloadWeek ? 'text-amber-600' : 'text-blue-600'}`} />
                     </CardHeader>
                     <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
                         <div className={`text-xs md:text-sm font-semibold ${isDeloadWeek ? 'text-amber-900' : 'text-blue-900'}`}>
                             {isDeloadWeek
-                                ? "Reduce intensity by 50%"
-                                : "Progressive overload"}
+                                ? "הורד עומס ב-50%"
+                                : "עלייה הדרגתית במשקלים"}
                         </div>
                     </CardContent>
                 </Card>
@@ -334,8 +358,8 @@ export function FitnessProgress() {
             {/* Volume Chart - Smaller on mobile */}
             <Card className="bg-white shadow border-slate-200 p-4 md:p-6">
                 <div className="mb-4 md:mb-6">
-                    <h3 className="text-base md:text-lg font-bold text-slate-900">Volume Progression</h3>
-                    <p className="text-xs md:text-sm text-slate-500">Total volume per workout</p>
+                    <h3 className="text-base md:text-lg font-bold text-slate-900">התקדמות נפח</h3>
+                    <p className="text-xs md:text-sm text-slate-500">סה״כ נפח לאימון</p>
                 </div>
                 <div className="h-[200px] md:h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -359,7 +383,7 @@ export function FitnessProgress() {
                             />
                             <Tooltip
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                                formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
+                                formatter={(value: number) => [`${value.toLocaleString()} kg`, 'נפח']}
                                 labelFormatter={(label) => new Date(label).toLocaleDateString('he-IL', { dateStyle: 'medium' })}
                             />
                             <Line
@@ -377,7 +401,7 @@ export function FitnessProgress() {
 
             {/* Mobile: Card-based layout, Desktop: Table */}
             <div className="space-y-3">
-                <h3 className="text-base md:text-lg font-bold text-slate-900 px-1">Workout History</h3>
+                <h3 className="text-base md:text-lg font-bold text-slate-900 px-1">היסטוריית אימונים</h3>
 
                 {/* Mobile Cards */}
                 <div className="md:hidden space-y-3">
@@ -397,10 +421,11 @@ export function FitnessProgress() {
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-slate-900">{session.day_name}</span>
+                                            <span className="text-lg">{session.icon}</span>
+                                            <span className="font-bold text-slate-900">{session.day_name_he}</span>
                                             {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${session.isDeload ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                W{session.weekNumber}
+                                                ש{session.weekNumber}
                                             </span>
                                         </div>
                                         {isExpanded ? (
@@ -429,7 +454,7 @@ export function FitnessProgress() {
                                 {/* Expanded Content */}
                                 {isExpanded && (
                                     <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3">
-                                        <h4 className="font-semibold text-slate-700 text-sm">Exercises</h4>
+                                        <h4 className="font-semibold text-slate-700 text-sm">תרגילים</h4>
                                         <div className="space-y-2">
                                             {session.exercises.map((exercise, idx) => (
                                                 <div
@@ -474,15 +499,15 @@ export function FitnessProgress() {
                                         {prevWorkout && (
                                             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                                                 <h5 className="font-semibold text-blue-800 text-xs mb-2">
-                                                    vs Previous {session.day_name}
+                                                    לעומת {session.day_name_he} הקודם
                                                 </h5>
                                                 <div className="flex justify-between text-sm">
                                                     <div>
-                                                        <span className="text-blue-600 text-xs">Now: </span>
+                                                        <span className="text-blue-600 text-xs">עכשיו: </span>
                                                         <span className="font-bold text-blue-900">{session.total_volume.toLocaleString()}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-blue-600 text-xs">Then: </span>
+                                                        <span className="text-blue-600 text-xs">אז: </span>
                                                         <span className="font-bold text-blue-900">{prevWorkout.total_volume.toLocaleString()}</span>
                                                     </div>
                                                 </div>
@@ -498,15 +523,15 @@ export function FitnessProgress() {
                 {/* Desktop Table */}
                 <div className="hidden md:block rounded-lg border bg-white shadow overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-right">
                             <thead className="bg-slate-50 text-slate-700 font-semibold border-b">
                                 <tr>
                                     <th className="px-4 py-3 w-8"></th>
-                                    <th className="px-4 py-3">Date</th>
-                                    <th className="px-4 py-3">Workout</th>
-                                    <th className="px-4 py-3 text-center">Week #</th>
-                                    <th className="px-4 py-3 text-right">Volume</th>
-                                    <th className="px-4 py-3 text-right">Improvement</th>
+                                    <th className="px-4 py-3">תאריך</th>
+                                    <th className="px-4 py-3">אימון</th>
+                                    <th className="px-4 py-3 text-center">שבוע</th>
+                                    <th className="px-4 py-3 text-left">נפח</th>
+                                    <th className="px-4 py-3 text-left">שיפור</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -530,20 +555,23 @@ export function FitnessProgress() {
                                                 <td className="px-4 py-3 font-medium text-slate-900">
                                                     {new Date(session.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit', year: '2-digit' })}
                                                 </td>
-                                                <td className="px-4 py-3 text-slate-600 flex items-center gap-2">
-                                                    {session.day_name}
-                                                    {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
+                                                <td className="px-4 py-3 text-slate-600">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{session.icon}</span>
+                                                        <span>{session.day_name_he}</span>
+                                                        {session.isPR && <Trophy className="h-4 w-4 text-amber-500" />}
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${session.isDeload ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
                                                         }`}>
-                                                        W{session.weekNumber}
+                                                        ש{session.weekNumber}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-mono font-medium text-slate-700">
+                                                <td className="px-4 py-3 text-left font-mono font-medium text-slate-700">
                                                     {session.total_volume.toLocaleString()}
                                                 </td>
-                                                <td className={`px-4 py-3 text-right font-bold ${!session.improvement ? 'text-slate-400' :
+                                                <td className={`px-4 py-3 text-left font-bold ${!session.improvement ? 'text-slate-400' :
                                                     session.improvement > 0 ? 'text-green-600' : 'text-red-500'
                                                     }`}>
                                                     {session.improvement ? `${session.improvement > 0 ? '+' : ''}${session.improvement.toFixed(1)}%` : '-'}
@@ -555,7 +583,7 @@ export function FitnessProgress() {
                                                 <tr>
                                                     <td colSpan={6} className="px-4 py-4 bg-slate-50/50">
                                                         <div className="space-y-3">
-                                                            <h4 className="font-semibold text-slate-700 text-sm mb-3">Exercise Breakdown</h4>
+                                                            <h4 className="font-semibold text-slate-700 text-sm mb-3">פירוט תרגילים</h4>
                                                             <div className="grid gap-3">
                                                                 {session.exercises.map((exercise, idx) => (
                                                                     <div
@@ -578,7 +606,7 @@ export function FitnessProgress() {
                                                                                     </span>
                                                                                     {exercise.previousWorkout && (
                                                                                         <span className="text-slate-500">
-                                                                                            Previous: {exercise.previousWorkout.weight} kg
+                                                                                            קודם: {exercise.previousWorkout.weight} kg
                                                                                             {exercise.currentWeight > exercise.previousWorkout.weight && (
                                                                                                 <span className="text-green-600 mr-1">
                                                                                                     (+{(exercise.currentWeight - exercise.previousWorkout.weight).toFixed(1)})
@@ -597,7 +625,7 @@ export function FitnessProgress() {
 
                                                                         {/* Mini Sparkline */}
                                                                         <div className="flex items-center gap-2">
-                                                                            <span className="text-xs text-slate-400">Trend</span>
+                                                                            <span className="text-xs text-slate-400">מגמה</span>
                                                                             <MiniSparkline data={exercise.history.map(h => h.weight)} />
                                                                         </div>
                                                                     </div>
@@ -608,15 +636,15 @@ export function FitnessProgress() {
                                                             {prevWorkout && (
                                                                 <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                                                                     <h5 className="font-semibold text-blue-800 text-sm mb-2">
-                                                                        Compared to Previous {session.day_name} ({new Date(prevWorkout.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit' })})
+                                                                        לעומת {session.day_name_he} הקודם ({new Date(prevWorkout.date).toLocaleDateString("he-IL", { day: '2-digit', month: '2-digit' })})
                                                                     </h5>
                                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                                         <div>
-                                                                            <span className="text-blue-600">This Workout:</span>
+                                                                            <span className="text-blue-600">אימון זה:</span>
                                                                             <span className="font-bold text-blue-900 mr-2">{session.total_volume.toLocaleString()} kg</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-blue-600">Previous:</span>
+                                                                            <span className="text-blue-600">קודם:</span>
                                                                             <span className="font-bold text-blue-900 mr-2">{prevWorkout.total_volume.toLocaleString()} kg</span>
                                                                         </div>
                                                                     </div>

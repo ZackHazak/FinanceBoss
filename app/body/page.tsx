@@ -3,12 +3,9 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui-components"
-import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp } from "lucide-react"
+import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp, UtensilsCrossed, Salad, Info } from "lucide-react"
 import Link from "next/link"
-import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, type WorkoutType } from "./workout-data"
-
-
-
+import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, WEEK_SCHEDULE, MEAL_IDEAS, NUTRITION_GUIDELINES, type WorkoutType } from "./workout-data"
 
 interface WorkoutLog {
     id: string
@@ -18,21 +15,27 @@ interface WorkoutLog {
         exercise: string
         weight: number
         completed: boolean
+        notes?: string
     }[]
 }
 
 interface ExerciseInput {
     exercise: string
+    exerciseHe: string
     weight: string
     completed: boolean
+    notes: string
+    targetSets: number
+    targetReps: string
 }
 
 export default function BodyPage() {
     const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([])
     const [loading, setLoading] = useState(false)
-    const [currentWorkout, setCurrentWorkout] = useState<WorkoutType>("PULL")
+    const [currentWorkout, setCurrentWorkout] = useState<WorkoutType>("CHEST_SHOULDERS")
     const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>([])
     const [sessionStarted, setSessionStarted] = useState(false)
+    const [showNutrition, setShowNutrition] = useState(false)
 
     useEffect(() => {
         fetchWorkoutLogs()
@@ -53,12 +56,18 @@ export default function BodyPage() {
 
     const determineNextWorkout = (logs: WorkoutLog[]) => {
         if (logs.length === 0) {
-            setCurrentWorkout("PULL")
+            setCurrentWorkout("CHEST_SHOULDERS")
             return
         }
 
         const lastWorkout = logs[0].workout_type
+        // Find the workout in our cycle and get the next one
         const lastIndex = WORKOUT_CYCLE.indexOf(lastWorkout)
+        if (lastIndex === -1) {
+            // If last workout not found in new cycle, start fresh
+            setCurrentWorkout("CHEST_SHOULDERS")
+            return
+        }
         const nextIndex = (lastIndex + 1) % WORKOUT_CYCLE.length
         setCurrentWorkout(WORKOUT_CYCLE[nextIndex])
     }
@@ -67,8 +76,12 @@ export default function BodyPage() {
         const program = WORKOUT_PROGRAMS[currentWorkout]
         const inputs = program.exercises.map(ex => ({
             exercise: ex.name,
+            exerciseHe: ex.nameHe,
             weight: "",
-            completed: false
+            completed: false,
+            notes: "",
+            targetSets: ex.sets,
+            targetReps: ex.reps
         }))
         setExerciseInputs(inputs)
         setSessionStarted(true)
@@ -77,6 +90,12 @@ export default function BodyPage() {
     const updateWeight = (index: number, weight: string) => {
         const updated = [...exerciseInputs]
         updated[index].weight = weight
+        setExerciseInputs(updated)
+    }
+
+    const updateNotes = (index: number, notes: string) => {
+        const updated = [...exerciseInputs]
+        updated[index].notes = notes
         setExerciseInputs(updated)
     }
 
@@ -92,7 +111,8 @@ export default function BodyPage() {
         const exercisesData = exerciseInputs.map(input => ({
             exercise: input.exercise,
             weight: parseFloat(input.weight) || 0,
-            completed: input.completed
+            completed: input.completed,
+            notes: input.notes
         }))
 
         const { error } = await supabase.from('ppl_workouts').insert({
@@ -144,15 +164,52 @@ export default function BodyPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-l from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
-                                Workout Logger
+                                מעקב אימונים
                             </h1>
                             <p className="text-xs md:text-sm text-slate-500 mt-0.5 flex items-center gap-1 md:gap-2">
                                 <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                                PPL Training System
+                                5 אימונים בשבוע + 2 ימי מנוחה
                             </p>
                         </div>
                     </div>
                 </div>
+
+                {/* Weekly Schedule Overview */}
+                {!sessionStarted && (
+                    <div className="rounded-2xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
+                        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            לוח שבועי
+                        </h3>
+                        <div className="grid grid-cols-7 gap-1 md:gap-2">
+                            {WEEK_SCHEDULE.map((day, idx) => {
+                                const isToday = new Date().getDay() === idx
+                                const dayProgram = day.workout ? WORKOUT_PROGRAMS[day.workout] : null
+
+                                return (
+                                    <button
+                                        key={day.day}
+                                        onClick={() => day.workout && setCurrentWorkout(day.workout)}
+                                        className={`p-2 md:p-3 rounded-xl text-center transition-all duration-200 ${
+                                            isToday ? 'ring-2 ring-orange-500 ring-offset-2' : ''
+                                        } ${
+                                            day.type === 'rest'
+                                                ? 'bg-slate-100 text-slate-400'
+                                                : day.type === 'recovery'
+                                                    ? 'bg-green-50 hover:bg-green-100 text-green-700'
+                                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                                        } ${day.workout === currentWorkout && !sessionStarted ? 'bg-orange-100 border-orange-300' : ''}`}
+                                    >
+                                        <div className="text-[10px] md:text-xs font-medium mb-1">{day.day}</div>
+                                        <div className="text-lg md:text-xl">
+                                            {day.type === 'rest' ? '😴' : dayProgram?.icon || '🏋️'}
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Next Workout Card - Responsive */}
                 {!sessionStarted && (
@@ -163,24 +220,24 @@ export default function BodyPage() {
                         <div className="relative p-4 md:p-8">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div className="flex items-center gap-3 md:gap-6">
-                                    <div className={`rounded-2xl md:rounded-3xl bg-gradient-to-br ${program.gradient} p-3 md:p-5 shadow-xl`}>
-                                        <Dumbbell className="h-6 w-6 md:h-10 md:w-10 text-white" />
+                                    <div className={`rounded-2xl md:rounded-3xl bg-gradient-to-br ${program.gradient} p-3 md:p-5 shadow-xl text-3xl md:text-5xl`}>
+                                        {program.icon}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                            <h2 className={`text-2xl md:text-4xl font-bold bg-gradient-to-br ${program.gradient} bg-clip-text text-transparent`}>
-                                                {program.name}
+                                            <h2 className={`text-xl md:text-3xl font-bold bg-gradient-to-br ${program.gradient} bg-clip-text text-transparent`}>
+                                                {program.nameHe}
                                             </h2>
                                             <span className={`px-2 md:px-4 py-1 md:py-1.5 rounded-full ${program.bgGlow} border ${program.borderGlow} text-xs md:text-sm font-semibold`}>
-                                                Workout
+                                                {program.dayHe}
                                             </span>
                                         </div>
                                         <p className="text-slate-500 flex items-center gap-1 md:gap-2 text-sm md:text-base">
                                             <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                            האימון הבא שלך מחכה
+                                            {program.isRecovery ? 'יום התאוששות אקטיבית' : 'האימון הבא שלך מחכה'}
                                         </p>
                                         <p className="text-xs text-slate-400 mt-1">
-                                            {program.exercises.length} תרגילים • {String(program.exercises.reduce((acc: number, ex) => acc + ex.sets, 0))} סטים
+                                            {program.exercises.length} {program.isRecovery ? 'פעילויות' : 'תרגילים'} • {program.exercises.reduce((acc, ex) => acc + ex.sets, 0)} סטים
                                         </p>
                                     </div>
                                 </div>
@@ -188,10 +245,75 @@ export default function BodyPage() {
                                     onClick={startSession}
                                     className={`w-full sm:w-auto bg-gradient-to-br ${program.gradient} hover:opacity-90 text-white text-base md:text-xl font-semibold px-6 md:px-10 py-4 md:py-7 rounded-xl md:rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 active:scale-95 md:hover:scale-105`}
                                 >
-                                    התחל אימון
+                                    {program.isRecovery ? 'התחל התאוששות' : 'התחל אימון'}
                                 </Button>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Nutrition Quick Tips - Collapsible */}
+                {!sessionStarted && (
+                    <div className="rounded-2xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-lg overflow-hidden">
+                        <button
+                            onClick={() => setShowNutrition(!showNutrition)}
+                            className="w-full p-4 md:p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-2 md:p-2.5 shadow-lg">
+                                    <UtensilsCrossed className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                                </div>
+                                <div className="text-right">
+                                    <h3 className="text-sm md:text-base font-bold text-slate-800">מדריך תזונה</h3>
+                                    <p className="text-xs text-slate-500">טיפים וארוחות מומלצות</p>
+                                </div>
+                            </div>
+                            <div className={`transform transition-transform ${showNutrition ? 'rotate-180' : ''}`}>
+                                <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+
+                        {showNutrition && (
+                            <div className="border-t border-slate-200/50 p-4 md:p-6 space-y-4">
+                                {/* Nutrition Guidelines */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-xl bg-red-50 border border-red-200/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-lg">📉</span>
+                                            <span className="font-bold text-red-800 text-sm">חיטוב</span>
+                                        </div>
+                                        <p className="text-xs text-red-700">גירעון: {NUTRITION_GUIDELINES.cutting.deficit}</p>
+                                        <p className="text-xs text-red-600">צפי: {NUTRITION_GUIDELINES.cutting.expected_loss}</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-green-50 border border-green-200/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-lg">📈</span>
+                                            <span className="font-bold text-green-800 text-sm">מסה</span>
+                                        </div>
+                                        <p className="text-xs text-green-700">עודף: {NUTRITION_GUIDELINES.bulking.surplus}</p>
+                                        <p className="text-xs text-green-600">צפי: {NUTRITION_GUIDELINES.bulking.expected_gain}</p>
+                                    </div>
+                                </div>
+
+                                {/* Meal Ideas */}
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                        <Salad className="h-4 w-4" />
+                                        רעיונות לארוחות
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {MEAL_IDEAS.map((meal, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 text-xs text-slate-700">
+                                                <span>{meal.icon}</span>
+                                                <span>{meal.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -203,18 +325,27 @@ export default function BodyPage() {
                             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
                             <div className="relative flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2">{program.name}</h2>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-2xl md:text-4xl">{program.icon}</span>
+                                        <h2 className="text-2xl md:text-4xl font-bold text-white">{program.nameHe}</h2>
+                                    </div>
                                     <p className="text-white/80 text-xs md:text-base">
                                         {new Date().toLocaleDateString("he-IL", { weekday: 'long', month: 'short', day: 'numeric' })}
                                     </p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-left">
                                     <div className="text-4xl md:text-6xl font-bold text-white/90">
                                         {exerciseInputs.filter(e => e.completed).length}
                                     </div>
                                     <div className="text-white/70 text-xs md:text-sm">מתוך {program.exercises.length}</div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Training Note */}
+                        <div className="p-3 bg-amber-50 border-b border-amber-200/50 flex items-center gap-2 text-xs text-amber-800">
+                            <Info className="h-4 w-4 flex-shrink-0" />
+                            <span>הסטים הרשומים אינם כוללים סט חימום, זה לפי הרגשה</span>
                         </div>
 
                         {/* Mobile Card Layout */}
@@ -230,17 +361,18 @@ export default function BodyPage() {
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
                                             <h3 className={`font-semibold text-sm ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
-                                                {exercise.name}
+                                                {exercise.nameHe}
                                             </h3>
-                                            <div className="flex items-center gap-2 mt-1">
+                                            <p className="text-xs text-slate-500 mt-0.5">{exercise.name}</p>
+                                            <div className="flex items-center gap-2 mt-2">
                                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
                                                     {exercise.sets} סטים
                                                 </span>
                                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
                                                     {exercise.reps} חזרות
                                                 </span>
-                                                <span className="px-2 py-0.5 rounded bg-gradient-to-br from-red-500 to-pink-600 text-white text-xs font-bold">
-                                                    RPE {exercise.rpe}
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${exercise.isCompound ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                    {exercise.isCompound ? 'מורכב' : 'מבודד'}
                                                 </span>
                                             </div>
                                         </div>
@@ -256,17 +388,29 @@ export default function BodyPage() {
                                             />
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-500">משקל:</span>
-                                        <input
-                                            type="number"
-                                            step="0.5"
-                                            placeholder="0.0"
-                                            value={exerciseInputs[index]?.weight || ""}
-                                            onChange={(e) => updateWeight(index, e.target.value)}
-                                            className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-sm"
-                                        />
-                                        <span className="text-xs text-slate-500">ק״ג</span>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 w-12">משקל:</span>
+                                            <input
+                                                type="number"
+                                                step="0.5"
+                                                placeholder="0.0"
+                                                value={exerciseInputs[index]?.weight || ""}
+                                                onChange={(e) => updateWeight(index, e.target.value)}
+                                                className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-sm"
+                                            />
+                                            <span className="text-xs text-slate-500">ק״ג</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 w-12">הערות:</span>
+                                            <input
+                                                type="text"
+                                                placeholder="..."
+                                                value={exerciseInputs[index]?.notes || ""}
+                                                onChange={(e) => updateNotes(index, e.target.value)}
+                                                className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-xs"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -278,12 +422,13 @@ export default function BodyPage() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="bg-gradient-to-l from-slate-50 to-slate-100 border-b-2 border-slate-200">
-                                            <th className="text-right px-8 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">תרגיל</th>
-                                            <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">סטים</th>
-                                            <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">חזרות</th>
-                                            <th className="text-center px-4 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">RPE</th>
-                                            <th className="text-center px-8 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">משקל (ק״ג)</th>
-                                            <th className="text-center px-6 py-5 text-sm font-bold text-slate-700 uppercase tracking-wider">סטטוס</th>
+                                            <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">תרגיל</th>
+                                            <th className="text-center px-3 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">סוג</th>
+                                            <th className="text-center px-3 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">סטים</th>
+                                            <th className="text-center px-3 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">חזרות</th>
+                                            <th className="text-center px-6 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">משקל (ק״ג)</th>
+                                            <th className="text-center px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">הערות</th>
+                                            <th className="text-center px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">סטטוס</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white">
@@ -295,37 +440,47 @@ export default function BodyPage() {
                                                     : 'hover:bg-slate-50'
                                                     }`}
                                             >
-                                                <td className="text-right px-8 py-5">
-                                                    <span className={`font-semibold text-base ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
-                                                        {exercise.name}
+                                                <td className="text-right px-6 py-4">
+                                                    <span className={`font-semibold text-sm ${exerciseInputs[index]?.completed ? 'text-green-700' : 'text-slate-800'}`}>
+                                                        {exercise.nameHe}
+                                                    </span>
+                                                    <p className="text-xs text-slate-400 mt-0.5">{exercise.name}</p>
+                                                </td>
+                                                <td className="text-center px-3 py-4">
+                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-bold ${exercise.isCompound ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                        {exercise.isCompound ? 'מורכב' : 'מבודד'}
                                                     </span>
                                                 </td>
-                                                <td className="text-center px-4 py-5">
+                                                <td className="text-center px-3 py-4">
                                                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm">
                                                         {exercise.sets}
                                                     </span>
                                                 </td>
-                                                <td className="text-center px-4 py-5">
-                                                    <span className="inline-flex items-center justify-center min-w-[2rem] px-3 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm">
+                                                <td className="text-center px-3 py-4">
+                                                    <span className="inline-flex items-center justify-center min-w-[3rem] px-3 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-sm">
                                                         {exercise.reps}
                                                     </span>
                                                 </td>
-                                                <td className="text-center px-4 py-5">
-                                                    <span className="inline-flex items-center justify-center w-12 h-8 rounded-lg bg-gradient-to-br from-red-500 to-pink-600 text-white font-bold text-sm shadow-md">
-                                                        {exercise.rpe}
-                                                    </span>
-                                                </td>
-                                                <td className="text-center px-8 py-5">
+                                                <td className="text-center px-6 py-4">
                                                     <input
                                                         type="number"
                                                         step="0.5"
                                                         placeholder="0.0"
                                                         value={exerciseInputs[index]?.weight || ""}
                                                         onChange={(e) => updateWeight(index, e.target.value)}
-                                                        className="w-24 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:border-slate-300"
+                                                        className="w-20 px-3 py-2 border-2 border-slate-200 rounded-xl text-center font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:border-slate-300"
                                                     />
                                                 </td>
-                                                <td className="text-center px-6 py-5">
+                                                <td className="text-center px-4 py-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="..."
+                                                        value={exerciseInputs[index]?.notes || ""}
+                                                        onChange={(e) => updateNotes(index, e.target.value)}
+                                                        className="w-32 px-3 py-2 border-2 border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:border-slate-300"
+                                                    />
+                                                </td>
+                                                <td className="text-center px-4 py-4">
                                                     <button
                                                         onClick={() => toggleCompleted(index)}
                                                         className="group hover:scale-110 transition-transform duration-200"
@@ -352,7 +507,7 @@ export default function BodyPage() {
                                 disabled={loading}
                                 className="flex-1 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-base md:text-lg font-semibold py-4 md:py-7 rounded-xl md:rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 active:scale-95 md:hover:scale-[1.02] disabled:opacity-50"
                             >
-                                {loading ? "שומר..." : "סיים אימון ושמור"}
+                                {loading ? "שומר..." : program.isRecovery ? "סיים התאוששות ושמור" : "סיים אימון ושמור"}
                             </Button>
                             <Button
                                 onClick={() => setSessionStarted(false)}
@@ -387,6 +542,8 @@ export default function BodyPage() {
                         <div className="grid gap-3 md:gap-4">
                             {workoutLogs.map(log => {
                                 const logProgram = WORKOUT_PROGRAMS[log.workout_type]
+                                if (!logProgram) return null // Handle old data with different workout types
+
                                 const completionRate = log.exercises_data.filter(e => e.completed).length / log.exercises_data.length
 
                                 return (
@@ -409,12 +566,12 @@ export default function BodyPage() {
                                         <div className="p-4 md:p-6">
                                             <div className="flex items-start justify-between mb-3 md:mb-4">
                                                 <div className="flex items-center gap-3 md:gap-4">
-                                                    <div className={`rounded-xl md:rounded-2xl bg-gradient-to-br ${logProgram.gradient} p-2.5 md:p-4 shadow-lg`}>
-                                                        <Dumbbell className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                                                    <div className={`rounded-xl md:rounded-2xl bg-gradient-to-br ${logProgram.gradient} p-2.5 md:p-4 shadow-lg text-xl md:text-2xl`}>
+                                                        {logProgram.icon}
                                                     </div>
                                                     <div>
-                                                        <h3 className={`text-xl md:text-2xl font-bold bg-gradient-to-br ${logProgram.gradient} bg-clip-text text-transparent mb-0.5 md:mb-1`}>
-                                                            {log.workout_type}
+                                                        <h3 className={`text-lg md:text-2xl font-bold bg-gradient-to-br ${logProgram.gradient} bg-clip-text text-transparent mb-0.5 md:mb-1`}>
+                                                            {logProgram.nameHe}
                                                         </h3>
                                                         <p className="text-xs md:text-sm text-slate-500">
                                                             {new Date(log.created_at).toLocaleDateString("he-IL", {
