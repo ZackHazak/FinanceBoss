@@ -87,7 +87,7 @@ export const WORKOUT_PROGRAMS: Record<WorkoutType, Program> = {
     LOWER_BODY: {
         name: "LOWER BODY",
         nameHe: "פלג גוף תחתון",
-        dayHe: "יום רביעי",
+        dayHe: "יום חמישי",
         gradient: "from-emerald-500 via-green-500 to-lime-600",
         bgGlow: "bg-emerald-500/10",
         borderGlow: "border-emerald-500/20",
@@ -104,7 +104,7 @@ export const WORKOUT_PROGRAMS: Record<WorkoutType, Program> = {
     UPPER_FINISHERS: {
         name: "UPPER + FINISHERS",
         nameHe: "פלג גוף עליון + פינישים",
-        dayHe: "יום חמישי",
+        dayHe: "יום שישי",
         gradient: "from-purple-500 via-fuchsia-500 to-pink-600",
         bgGlow: "bg-purple-500/10",
         borderGlow: "border-purple-500/20",
@@ -184,8 +184,44 @@ export const WEEK_SCHEDULE = [
     { day: "ראשון", workout: "CHEST_SHOULDERS", type: "training" },
     { day: "שני", workout: "BACK_REAR_DELT", type: "training" },
     { day: "שלישי", workout: "ACTIVE_RECOVERY", type: "recovery" },
-    { day: "רביעי", workout: "LOWER_BODY", type: "training" },
-    { day: "חמישי", workout: "UPPER_FINISHERS", type: "training" },
-    { day: "שישי", workout: null, type: "rest" },
+    { day: "רביעי", workout: null, type: "rest" },
+    { day: "חמישי", workout: "LOWER_BODY", type: "training" },
+    { day: "שישי", workout: "UPPER_FINISHERS", type: "training" },
     { day: "שבת", workout: null, type: "rest" },
 ] as const
+
+// Deload Configuration
+export const DELOAD_CONFIG = {
+    frequency: 6, // DELOAD every 6 weeks
+    intensityReduction: 50, // Reduce intensity by 50%
+    message: "שבוע DELOAD - הורד עומס ב-50%"
+}
+
+// Helper to calculate current week number
+export function calculateWeekNumber(workoutLogs: { created_at: string }[]): number {
+    if (workoutLogs.length === 0) return 1
+
+    // Get the first workout date
+    const sortedLogs = [...workoutLogs].sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    const firstWorkoutDate = new Date(sortedLogs[0].created_at)
+    const today = new Date()
+
+    // Calculate weeks since first workout
+    const diffTime = Math.abs(today.getTime() - firstWorkoutDate.getTime())
+    const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7))
+
+    return diffWeeks
+}
+
+// Check if current week is a deload week
+export function isDeloadWeek(weekNumber: number): boolean {
+    return weekNumber > 0 && weekNumber % DELOAD_CONFIG.frequency === 0
+}
+
+// Get weeks until next deload
+export function getWeeksUntilDeload(weekNumber: number): number {
+    const remaining = DELOAD_CONFIG.frequency - (weekNumber % DELOAD_CONFIG.frequency)
+    return remaining === DELOAD_CONFIG.frequency ? 0 : remaining
+}

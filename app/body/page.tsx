@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui-components"
-import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp, UtensilsCrossed, Salad, Info } from "lucide-react"
+import { Dumbbell, ArrowRight, Calendar, CheckCircle2, Trash2, TrendingUp, UtensilsCrossed, Salad, Info, AlertTriangle, ChevronDown } from "lucide-react"
 import Link from "next/link"
-import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, WEEK_SCHEDULE, MEAL_IDEAS, NUTRITION_GUIDELINES, type WorkoutType } from "./workout-data"
+import { WORKOUT_CYCLE, WORKOUT_PROGRAMS, WEEK_SCHEDULE, MEAL_IDEAS, NUTRITION_GUIDELINES, DELOAD_CONFIG, calculateWeekNumber, isDeloadWeek, getWeeksUntilDeload, type WorkoutType } from "./workout-data"
 
 interface WorkoutLog {
     id: string
@@ -36,6 +36,8 @@ export default function BodyPage() {
     const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>([])
     const [sessionStarted, setSessionStarted] = useState(false)
     const [showNutrition, setShowNutrition] = useState(false)
+    const [showWorkoutPicker, setShowWorkoutPicker] = useState(false)
+    const [currentWeek, setCurrentWeek] = useState(1)
 
     useEffect(() => {
         fetchWorkoutLogs()
@@ -46,11 +48,14 @@ export default function BodyPage() {
             .from('ppl_workouts')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10)
+            .limit(50) // Get more for week calculation
 
         if (data) {
             setWorkoutLogs(data)
             determineNextWorkout(data)
+            // Calculate current week
+            const week = calculateWeekNumber(data)
+            setCurrentWeek(week)
         }
     }
 
@@ -70,6 +75,11 @@ export default function BodyPage() {
         }
         const nextIndex = (lastIndex + 1) % WORKOUT_CYCLE.length
         setCurrentWorkout(WORKOUT_CYCLE[nextIndex])
+    }
+
+    const selectWorkout = (workoutType: WorkoutType) => {
+        setCurrentWorkout(workoutType)
+        setShowWorkoutPicker(false)
     }
 
     const startSession = () => {
@@ -149,6 +159,8 @@ export default function BodyPage() {
     }
 
     const program = WORKOUT_PROGRAMS[currentWorkout]
+    const isDeload = isDeloadWeek(currentWeek)
+    const weeksUntilDeload = getWeeksUntilDeload(currentWeek)
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -174,6 +186,57 @@ export default function BodyPage() {
                     </div>
                 </div>
 
+                {/* Week Status Card */}
+                {!sessionStarted && (
+                    <div className={`rounded-2xl border-2 p-4 md:p-6 ${isDeload
+                        ? 'bg-amber-50 border-amber-300 shadow-amber-100'
+                        : 'bg-white/80 border-slate-200/50'} backdrop-blur-sm shadow-lg`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className={`rounded-xl p-3 ${isDeload
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-blue-100 text-blue-700'}`}>
+                                    <span className="text-2xl md:text-3xl font-bold">{currentWeek}</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-bold text-slate-800">
+                                        שבוע {currentWeek}
+                                    </h3>
+                                    {isDeload ? (
+                                        <div className="flex items-center gap-2 text-amber-700">
+                                            <AlertTriangle className="h-4 w-4" />
+                                            <span className="text-sm font-semibold">שבוע DELOAD - הורד עומס ב-50%</span>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-slate-500">
+                                            {weeksUntilDeload === 0
+                                                ? 'Deload בשבוע הבא!'
+                                                : `עוד ${weeksUntilDeload} שבועות עד Deload`}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xs text-slate-500 mb-1">מחזור Deload</div>
+                                <div className="flex gap-1">
+                                    {Array.from({ length: DELOAD_CONFIG.frequency }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                                                i < (currentWeek % DELOAD_CONFIG.frequency || DELOAD_CONFIG.frequency)
+                                                    ? isDeload && i === DELOAD_CONFIG.frequency - 1
+                                                        ? 'bg-amber-500'
+                                                        : 'bg-green-500'
+                                                    : 'bg-slate-200'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Weekly Schedule Overview */}
                 {!sessionStarted && (
                     <div className="rounded-2xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-lg p-4 md:p-6">
@@ -198,7 +261,7 @@ export default function BodyPage() {
                                                 : day.type === 'recovery'
                                                     ? 'bg-green-50 hover:bg-green-100 text-green-700'
                                                     : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
-                                        } ${day.workout === currentWorkout && !sessionStarted ? 'bg-orange-100 border-orange-300' : ''}`}
+                                        } ${day.workout === currentWorkout && !sessionStarted ? 'bg-orange-100 border-2 border-orange-300' : ''}`}
                                     >
                                         <div className="text-[10px] md:text-xs font-medium mb-1">{day.day}</div>
                                         <div className="text-lg md:text-xl">
@@ -211,11 +274,66 @@ export default function BodyPage() {
                     </div>
                 )}
 
+                {/* Workout Picker Dropdown */}
+                {!sessionStarted && (
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowWorkoutPicker(!showWorkoutPicker)}
+                            className="w-full rounded-2xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-lg p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">{program.icon}</span>
+                                <div className="text-right">
+                                    <h3 className="font-bold text-slate-800">{program.nameHe}</h3>
+                                    <p className="text-xs text-slate-500">לחץ לבחירת אימון אחר</p>
+                                </div>
+                            </div>
+                            <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${showWorkoutPicker ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showWorkoutPicker && (
+                            <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+                                {WORKOUT_CYCLE.map((workoutType) => {
+                                    const workoutProgram = WORKOUT_PROGRAMS[workoutType]
+                                    const isSelected = workoutType === currentWorkout
+
+                                    return (
+                                        <button
+                                            key={workoutType}
+                                            onClick={() => selectWorkout(workoutType)}
+                                            className={`w-full p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0 ${
+                                                isSelected ? 'bg-orange-50' : ''
+                                            }`}
+                                        >
+                                            <span className="text-2xl">{workoutProgram.icon}</span>
+                                            <div className="flex-1 text-right">
+                                                <h4 className="font-semibold text-slate-800">{workoutProgram.nameHe}</h4>
+                                                <p className="text-xs text-slate-500">{workoutProgram.dayHe} • {workoutProgram.exercises.length} תרגילים</p>
+                                            </div>
+                                            {isSelected && (
+                                                <CheckCircle2 className="h-5 w-5 text-orange-500 fill-orange-500" />
+                                            )}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Next Workout Card - Responsive */}
                 {!sessionStarted && (
                     <div className={`relative overflow-hidden rounded-2xl md:rounded-3xl border-2 ${program.borderGlow} bg-white/80 backdrop-blur-xl shadow-xl md:shadow-2xl shadow-slate-900/10 transition-all duration-500`}>
                         {/* Gradient Background Glow */}
                         <div className={`absolute inset-0 bg-gradient-to-br ${program.gradient} opacity-5`}></div>
+
+                        {/* Deload Warning Banner */}
+                        {isDeload && (
+                            <div className="relative bg-amber-100 border-b border-amber-200 p-3 flex items-center justify-center gap-2 text-amber-800">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span className="text-sm font-semibold">שבוע DELOAD - הורד משקלים ב-50%!</span>
+                            </div>
+                        )}
 
                         <div className="relative p-4 md:p-8">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -331,6 +449,9 @@ export default function BodyPage() {
                                     </div>
                                     <p className="text-white/80 text-xs md:text-base">
                                         {new Date().toLocaleDateString("he-IL", { weekday: 'long', month: 'short', day: 'numeric' })}
+                                        <span className="mx-2">•</span>
+                                        שבוע {currentWeek}
+                                        {isDeload && <span className="mr-2 px-2 py-0.5 bg-amber-400/30 rounded text-amber-100">DELOAD</span>}
                                     </p>
                                 </div>
                                 <div className="text-left">
@@ -342,8 +463,16 @@ export default function BodyPage() {
                             </div>
                         </div>
 
+                        {/* Deload Warning in Session */}
+                        {isDeload && (
+                            <div className="p-3 bg-amber-100 border-b border-amber-200 flex items-center gap-2 text-amber-800">
+                                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                                <span className="text-sm font-semibold">שבוע DELOAD - הורד את המשקלים ב-50% מהרגיל!</span>
+                            </div>
+                        )}
+
                         {/* Training Note */}
-                        <div className="p-3 bg-amber-50 border-b border-amber-200/50 flex items-center gap-2 text-xs text-amber-800">
+                        <div className="p-3 bg-blue-50 border-b border-blue-200/50 flex items-center gap-2 text-xs text-blue-800">
                             <Info className="h-4 w-4 flex-shrink-0" />
                             <span>הסטים הרשומים אינם כוללים סט חימום, זה לפי הרגשה</span>
                         </div>
@@ -540,7 +669,7 @@ export default function BodyPage() {
                         </div>
                     ) : (
                         <div className="grid gap-3 md:gap-4">
-                            {workoutLogs.map(log => {
+                            {workoutLogs.slice(0, 10).map(log => {
                                 const logProgram = WORKOUT_PROGRAMS[log.workout_type]
                                 if (!logProgram) return null // Handle old data with different workout types
 

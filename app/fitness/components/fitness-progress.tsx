@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui-components"
-import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy, Flame } from "lucide-react"
-import { WORKOUT_PROGRAMS, type WorkoutType } from "@/app/body/workout-data"
+import { Loader2, TrendingUp, AlertCircle, Dumbbell, CalendarCheck, ChevronDown, ChevronUp, Trophy, Flame, AlertTriangle } from "lucide-react"
+import { WORKOUT_PROGRAMS, DELOAD_CONFIG, calculateWeekNumber, isDeloadWeek, getWeeksUntilDeload, type WorkoutType } from "@/app/body/workout-data"
 
 interface RawWorkoutLog {
     id: string
@@ -87,6 +87,7 @@ export function FitnessProgress() {
     const [sessions, setSessions] = useState<ProcessedSession[]>([])
     const [loading, setLoading] = useState(true)
     const [expandedSession, setExpandedSession] = useState<string | null>(null)
+    const [currentWeek, setCurrentWeek] = useState(1)
 
     useEffect(() => {
         fetchData()
@@ -100,6 +101,9 @@ export function FitnessProgress() {
 
         if (data) {
             processData(data)
+            // Calculate actual week number
+            const week = calculateWeekNumber(data)
+            setCurrentWeek(week)
         } else if (error) {
             console.error("Error fetching workouts:", error)
         }
@@ -149,7 +153,7 @@ export function FitnessProgress() {
                     day_name_he: log.workout_type,
                     icon: '🏋️',
                     total_volume: 0,
-                    weekNumber: Math.floor(index / 5) + 1,
+                    weekNumber: Math.floor(index / 4) + 1, // 4 training days per week
                     isDeload: false,
                     improvement: null,
                     isPR: false,
@@ -158,8 +162,8 @@ export function FitnessProgress() {
                 }
             }
 
-            const weekNumber = Math.floor(index / 5) + 1 // 5 training days per week
-            const isDeload = weekNumber % 8 === 0
+            const weekNumber = Math.floor(index / 4) + 1 // 4 training days per week
+            const isDeload = isDeloadWeek(weekNumber)
 
             let total_volume = 0
             let sessionIsPR = false
@@ -280,9 +284,8 @@ export function FitnessProgress() {
     )
 
     const currentSession = sessions[sessions.length - 1]
-    const currentWeek = currentSession.weekNumber
-    const isDeloadWeek = currentWeek % 8 === 0
-    const weeksUntilDeload = 8 - (currentWeek % 8)
+    const isCurrentDeload = isDeloadWeek(currentWeek)
+    const weeksUntilDeload = getWeeksUntilDeload(currentWeek)
 
     // Reverse for table display (Newest first)
     const tableSessions = [...sessions].reverse()
@@ -295,23 +298,66 @@ export function FitnessProgress() {
 
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Week Status Card with Deload Indicator */}
+            <div className={`rounded-2xl border-2 p-4 md:p-6 ${isCurrentDeload
+                ? 'bg-amber-50 border-amber-300 shadow-amber-100'
+                : 'bg-white border-slate-200'} shadow-lg`}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <div className={`rounded-xl p-3 ${isCurrentDeload
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-blue-100 text-blue-700'}`}>
+                            <span className="text-2xl md:text-3xl font-bold">{currentWeek}</span>
+                        </div>
+                        <div>
+                            <h3 className="text-lg md:text-xl font-bold text-slate-800">
+                                שבוע {currentWeek}
+                            </h3>
+                            {isCurrentDeload ? (
+                                <div className="flex items-center gap-2 text-amber-700">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span className="text-sm font-semibold">שבוע DELOAD - הורד עומס ב-50%</span>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-slate-500">
+                                    {weeksUntilDeload === 0
+                                        ? 'Deload בשבוע הבא!'
+                                        : `עוד ${weeksUntilDeload} שבועות עד Deload`}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="text-left">
+                        <div className="text-xs text-slate-500 mb-1">מחזור {DELOAD_CONFIG.frequency} שבועות</div>
+                        <div className="flex gap-1">
+                            {Array.from({ length: DELOAD_CONFIG.frequency }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                                        i < (currentWeek % DELOAD_CONFIG.frequency || DELOAD_CONFIG.frequency)
+                                            ? isCurrentDeload && i === DELOAD_CONFIG.frequency - 1
+                                                ? 'bg-amber-500'
+                                                : 'bg-green-500'
+                                            : 'bg-slate-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Status Cards - Stack on mobile, 3 cols on desktop */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 <Card className="bg-white shadow border-slate-200">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
-                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">שלב נוכחי</CardTitle>
+                        <CardTitle className="text-xs md:text-sm font-medium text-slate-600">סה״כ אימונים</CardTitle>
                         <CalendarCheck className="h-4 w-4 text-slate-500" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
-                        <div className="text-xl md:text-2xl font-bold text-slate-900">שבוע {currentWeek}</div>
+                        <div className="text-xl md:text-2xl font-bold text-slate-900">{sessions.length}</div>
                         <p className="text-xs text-slate-500 mt-1">
-                            {isDeloadWeek ? (
-                                <span className="text-amber-600 font-bold flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" /> שבוע DELOAD
-                                </span>
-                            ) : (
-                                <span>{weeksUntilDeload === 8 ? 0 : weeksUntilDeload} שבועות עד Deload</span>
-                            )}
+                            מתחילת התוכנית
                         </p>
                     </CardContent>
                 </Card>
@@ -338,16 +384,16 @@ export function FitnessProgress() {
                     </CardContent>
                 </Card>
 
-                <Card className={`${isDeloadWeek ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} shadow sm:col-span-2 md:col-span-1`}>
+                <Card className={`${isCurrentDeload ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} shadow sm:col-span-2 md:col-span-1`}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6 md:pb-2">
-                        <CardTitle className={`text-xs md:text-sm font-medium ${isDeloadWeek ? 'text-amber-700' : 'text-blue-700'}`}>
-                            {isDeloadWeek ? "עצת Deload" : "מיקוד אימון"}
+                        <CardTitle className={`text-xs md:text-sm font-medium ${isCurrentDeload ? 'text-amber-700' : 'text-blue-700'}`}>
+                            {isCurrentDeload ? "עצת Deload" : "מיקוד אימון"}
                         </CardTitle>
-                        <Flame className={`h-4 w-4 ${isDeloadWeek ? 'text-amber-600' : 'text-blue-600'}`} />
+                        <Flame className={`h-4 w-4 ${isCurrentDeload ? 'text-amber-600' : 'text-blue-600'}`} />
                     </CardHeader>
                     <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
-                        <div className={`text-xs md:text-sm font-semibold ${isDeloadWeek ? 'text-amber-900' : 'text-blue-900'}`}>
-                            {isDeloadWeek
+                        <div className={`text-xs md:text-sm font-semibold ${isCurrentDeload ? 'text-amber-900' : 'text-blue-900'}`}>
+                            {isCurrentDeload
                                 ? "הורד עומס ב-50%"
                                 : "עלייה הדרגתית במשקלים"}
                         </div>
