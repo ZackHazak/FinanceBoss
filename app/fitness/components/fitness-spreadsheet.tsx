@@ -52,12 +52,17 @@ export function FitnessSpreadsheet({ dayName }: Props) {
     // Debounce Save Logic
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Keep a ref that always mirrors the latest logs state so debounced callbacks
-    // don't read stale closures (new entries would otherwise be undefined in saveLog)
+    // Keep refs that always mirror the latest state so debounced callbacks
+    // don't read stale closures
     const logsRef = useRef(logs)
     useEffect(() => {
         logsRef.current = logs
     }, [logs])
+
+    const targetsRef = useRef(targets)
+    useEffect(() => {
+        targetsRef.current = targets
+    }, [targets])
 
     const fetchData = useCallback(async () => {
         setLoading(true)
@@ -153,7 +158,7 @@ export function FitnessSpreadsheet({ dayName }: Props) {
     }
 
     const saveTarget = async (targetId: string, field: keyof FitnessTarget, value: string) => {
-        const target = targets.find(t => t.id === targetId)
+        const target = targetsRef.current.find(t => t.id === targetId)
         if (!target) return
 
         const { error } = await supabase

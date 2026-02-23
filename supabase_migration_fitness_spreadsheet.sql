@@ -53,6 +53,8 @@ alter table fitness_daily_summary enable row level security;
 
 -- Policies (Permissive)
 create policy "Allow public read fitness_targets" on fitness_targets for select using (true);
+create policy "Allow public insert fitness_targets" on fitness_targets for insert with check (true);
+create policy "Allow public update fitness_targets" on fitness_targets for update using (true);
 create policy "Allow public read fitness_logs" on fitness_logs for select using (true);
 create policy "Allow public insert fitness_logs" on fitness_logs for insert with check (true);
 create policy "Allow public update fitness_logs" on fitness_logs for update using (true);
