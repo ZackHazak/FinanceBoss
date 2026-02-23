@@ -52,6 +52,13 @@ export function FitnessSpreadsheet({ dayName }: Props) {
     // Debounce Save Logic
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+    // Keep a ref that always mirrors the latest logs state so debounced callbacks
+    // don't read stale closures (new entries would otherwise be undefined in saveLog)
+    const logsRef = useRef(logs)
+    useEffect(() => {
+        logsRef.current = logs
+    }, [logs])
+
     const fetchData = useCallback(async () => {
         setLoading(true)
 
@@ -216,8 +223,9 @@ export function FitnessSpreadsheet({ dayName }: Props) {
         // Actually, we can just upsert the specific field if we structured it rights, 
         // but Supabase upsert requires unique match.
 
-        // Simpler approach: payload constructed from current state
-        const currentLog = logs[targetId]
+        // Read from ref to avoid stale closure (logs state may not yet be updated
+        // in the closure captured when the debounced timeout was scheduled)
+        const currentLog = logsRef.current[targetId]
         if (!currentLog) return
 
         const payload = {
